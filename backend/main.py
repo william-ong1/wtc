@@ -6,8 +6,10 @@ import torch
 import numpy as np
 import pillow_heif
 
+IMAGE_SIZE = (512, 512)
+
 # Load model and set to evaluation mode
-model = torch.jit.load("models/model.pth", map_location=torch.device("cpu"))
+model = torch.jit.load("models/object_recognition_model_updated.pth", map_location=torch.device("cpu"))
 model.eval()
 
 app = FastAPI()
@@ -38,33 +40,31 @@ def preprocess_image(image: UploadFile) -> Image:
             heif_image.data
         )
 
-    # Convert to grayscale
-    image = image.convert("L")
+    image = image.convert('RGB').resize(IMAGE_SIZE)
+    image = np.array(image, dtype=np.float32) / 255.0
+    image = torch.tensor(image).permute(2, 0, 1)
+    return image.unsqueeze(0)
+    # # Resize to match training dimensions
+    # image = image.reshape(IMAGE_SIZE)
 
-    # Resize to match training dimensions (128x128)
-    image = image.resize((128, 128))
+    # # Convert to numpy array and normalize
+    # image = np.array(image, dtype=np.float32) / 255.0
 
-    # Convert to numpy array and normalize
-    image = np.array(image) / 255.0
+    # # Convert to PyTorch tensor
+    # image_tensor = torch.tensor(image, dtype=torch.float32)
 
-    # Add channel dimension (1, 128, 128)
-    image = np.expand_dims(image, axis=0)
-
-    # Convert to PyTorch tensor
-    image_tensor = torch.tensor(image, dtype=torch.float32)
-
-    # Add batch dimension (1, 1, 128, 128)
-    image_tensor = image_tensor.unsqueeze(0)
-
-    return image_tensor  # Shape: (1, 1, 128, 128)
+    # # Add batch dimension and permute dimensions (B, H, W, C) to (B, C, H, W)
+    # return image_tensor.unsqueeze(0).permute(0, 3, 1, 2)
 
 
 @app.post("/predict/")
 async def predict(file: UploadFile = File(...)):
     image = preprocess_image(file)
+    print(image.shape)
     
     # Run prediction
     with torch.no_grad():
+        print(image.shape)
         output = model(image)
     
     # Convert to label
