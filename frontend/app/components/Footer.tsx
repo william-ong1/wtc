@@ -1,6 +1,6 @@
 const Footer = () => {
   return (
-    <footer className="relative flex flex-wrap items-center justify-center w-full text-[10px] text-gray-600 p-3 gap-10 border-t border-[0.25px] border-white/5 shadow-xl shadow-white/5">
+    <footer className="relative flex flex-wrap items-center justify-center w-full text-[10px] text-gray-600 p-3 gap-10 border-t border-[0.25px] border-white/10 shadow-xl shadow-white/5">
       <span>© 2025 WTC.</span>
       <nav className="flex gap-10">
         <a href="/terms" className="hover:text-white transition-colors">Terms of Service</a>

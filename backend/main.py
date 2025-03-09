@@ -9,7 +9,7 @@ import pillow_heif
 IMAGE_SIZE = (512, 512)
 
 # Load model and set to evaluation mode
-model = torch.jit.load("models/object_recognition_model_updated.pth", map_location=torch.device("cpu"))
+model = torch.jit.load("models/jit_model_val95_test99.pth", map_location=torch.device("cpu"))
 model.eval()
 
 app = FastAPI()
@@ -40,21 +40,16 @@ def preprocess_image(image: UploadFile) -> Image:
             heif_image.data
         )
 
+    # Resize to match training dimensions
     image = image.convert('RGB').resize(IMAGE_SIZE)
+
+    # Convert to numpy array and normalize
     image = np.array(image, dtype=np.float32) / 255.0
+
+    # Convert to PyTorch tensor as (C, H, W)
     image = torch.tensor(image).permute(2, 0, 1)
+
     return image.unsqueeze(0)
-    # # Resize to match training dimensions
-    # image = image.reshape(IMAGE_SIZE)
-
-    # # Convert to numpy array and normalize
-    # image = np.array(image, dtype=np.float32) / 255.0
-
-    # # Convert to PyTorch tensor
-    # image_tensor = torch.tensor(image, dtype=torch.float32)
-
-    # # Add batch dimension and permute dimensions (B, H, W, C) to (B, C, H, W)
-    # return image_tensor.unsqueeze(0).permute(0, 3, 1, 2)
 
 
 @app.post("/predict/")
@@ -70,4 +65,4 @@ async def predict(file: UploadFile = File(...)):
     # Convert to label
     prediction = torch.argmax(output, dim=1).item()
 
-    return {"prediction": prediction}
+    return {"prediction": prediction + 1}

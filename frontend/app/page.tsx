@@ -10,7 +10,7 @@ export default function Home() {
       <Header />
 
       <main className="flex flex-row flex-1 justify-center items-stretch text-center shadow-md">
-        <div className="lg:sticky lg:top-0 lg:flex lg:max-h-screen lg:w-1/3 lg:flex-col lg:border-r border-[0.1px] border-white/5 shadow-sm">
+        <div className="lg:sticky lg:top-0 lg:flex lg:max-h-screen lg:w-1/3 lg:flex-col lg:border-r border-[0.1px] border-white/10 shadow-sm">
           <ImageContent />
         </div>
 

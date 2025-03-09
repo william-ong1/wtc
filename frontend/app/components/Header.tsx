@@ -1,6 +1,6 @@
 const Header = () => {
   return (
-    <div className="relative flex items-center justify-center font-semibold w-full p-2 border-b border-[0.25px] border-white/5 shadow-md shadow-white/5">
+    <div className="relative flex items-center justify-center font-semibold w-full p-4 border-b border-[0.25px] border-white/10 shadow-md shadow-white/5">
       What's That Car?
     </div>
 

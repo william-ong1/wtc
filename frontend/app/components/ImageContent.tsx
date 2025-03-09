@@ -37,42 +37,42 @@ const ImageContent = () => {
   };
 
   return (
-    <div className="flex flex-col flex-1 items-stretch justify-center w-full h-full">
+    <div className="flex flex-col flex-1 items-stretch justify-center w-full h-full gap-12 fade-in mt-6">
 
       {/* Stationary button */}
-      <div className="h-3/4 items-center justify-center text-center flex p-16 pb-0">
+      {/* <div className="h-3/4 items-center justify-center text-center flex p-16 pb-0">
         <div className="relative flex items-center justify-center">
           <Image
             key={fadeKey}
             src={displayImage ? image : placeholderImg}
             alt="Uploaded Image"
-            width={300}
-            height={400}
+            width={350}
+            height={450}
             style={{ objectFit: "contain" }}
-            className="rounded-xl fade-in border border-white/35"
+            className="rounded-xl fade-in border border-white/35 "
           />
         </div>
       </div>
 
-      <div className="h-1/4 pt-4 justify-center w-full flex">
+      <div className="h-1/4 pt-12 justify-center w-full flex">
         <ImageUpload onChange={handleImageUpload} />
-      </div>
+      </div> */}
 
 
       {/* Button moves with image */}
-      {/* <div className="relative flex items-center justify-center">
+      <div className="relative flex items-center justify-center">
         <Image
           key={fadeKey}
           src={displayImage ? image : placeholderImg}
           alt="Uploaded Image"
-          width={300}
-          height={400}
+          width={350}
+          height={450}
           style={{ objectFit: "contain" }}
-          className="rounded-xl fade-in"
-        />
+          className="rounded-xl fade-in border border-white/25"
+          />
       </div>
 
-      <ImageUpload onChange={handleImageUpload} /> */}
+      <ImageUpload onChange={handleImageUpload} />
 
     </div>
   );

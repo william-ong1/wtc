@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "wtc",
+  title: "wtc - What's That Car?",
   description: "Recognize any car on the road.",
 };
 
