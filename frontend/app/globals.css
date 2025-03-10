@@ -5,7 +5,7 @@
 :root {
   /* --background: #ffffff;
   --foreground: #171717; */
-  --background: #0e111c;
+  --background: #000000;
   --foreground: #ffffff;
 }
 
@@ -29,7 +29,7 @@ body {
 }
 
 .animate-gradient {
-  background: linear-gradient(90deg, #3b82f6, #9333ea, #3b82f6);
+  background: linear-gradient(90deg, #3B03FF, #8A4DFF, #3B03FF);
   background-size: 200% 200%;
   animation: gradient 5s ease infinite;
 }
@@ -45,5 +45,5 @@ body {
 }
 
 .fade-in {
-  animation: fadeIn 0.5s ease-out forwards;
+  animation: fadeIn 0.3s ease-out forwards;
 }

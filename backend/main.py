@@ -5,6 +5,7 @@ import io
 import torch
 import numpy as np
 import pillow_heif
+import time
 
 IMAGE_SIZE = (512, 512)
 
@@ -54,6 +55,7 @@ def preprocess_image(image: UploadFile) -> Image:
 
 @app.post("/predict/")
 async def predict(file: UploadFile = File(...)):
+    time.sleep(2)
     image = preprocess_image(file)
     print(image.shape)
     
