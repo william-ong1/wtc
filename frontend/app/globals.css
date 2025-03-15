@@ -3,23 +3,30 @@
 @tailwind utilities;
 
 :root {
-  /* --background: #ffffff;
-  --foreground: #171717; */
   --background: #000000;
   --foreground: #ffffff;
+  background-color: #000000;
+  color: #ffffff;
 }
 
-@media (prefers-color-scheme: dark) {
+/* @media (prefers-color-scheme: dark) {
   :root {
-    /* --background: #0e111c; */
-    --background: #000;
+    --background: #000000;
     --foreground: #ffffff;
   }
+} */
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  color: var(--foreground);
+  background: var(--background);
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
+  display: flex;
+  flex-direction: column;
 }
 
 @keyframes gradient {
@@ -32,6 +39,15 @@ body {
   background: linear-gradient(90deg, #3B03FF, #8A4DFF, #3B03FF);
   background-size: 200% 200%;
   animation: gradient 5s ease infinite;
+}
+
+.animate-gradient-text {
+  background: linear-gradient(90deg, #3B82F6, #8B5CF6, #3B82F6);
+  background-size: 200% 200%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  animation: gradient 6s ease infinite;
 }
 
 /* Fade-in effect */

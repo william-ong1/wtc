@@ -1,47 +1,71 @@
 "use client";
 
-import Image, {StaticImageData} from "next/image";
-import ImageUpload from "./ImageUpload";
-import { useState } from "react";
+import Image from "next/image";
+import { useState, useEffect, useRef, RefObject, Dispatch, SetStateAction } from "react";
 import axios from "axios";
-import placeholderImg from "@/public/images/placeholder-dark.png";
+import placeholderImg from "@/public/images/placeholder.png";
 import CarInfo from "./CarInfo";
-import tempLogo from "@/public/images/temp-logo2.png";
-import toyotaLogo from "@/public/images/toyota.png";
+import { FeatureCard, StatCard } from "./Cards";
 
 type Car = {
   make: string;
   model: string;
   year: string;
   rarity: string;
-  image: StaticImageData;
+  link: string;
 };
-
-// TODO: Delete
-const makes = ["Toyota", "Honda", "Ford", "Chevrolet", "BMW", "Mercedes-Benz", "Audi", "Nissan", "Lexus", "Hyundai", "Kia", "Mazda", "Peugeot", "Volkswagen", "Fiat", "Renault", "Jaguar", "Porsche"];
-const models = ["Mustang", "Corolla", "Civic"];
-const years = ["2022", "2021", "2020", "2019", "2018", "2017", "2016", "2015", "2014", "2013", "2012", "2011"];
-const rarity = ["91", "92", "93", "94", "95", "96", "97", "98", "99", "100", "101", "102", "103", "104", "105", "106", "107"];
-
-const getRandomElement = (array: string[]) : string => {
-  const randomIndex = Math.floor(Math.random() * array.length);
-  return array[randomIndex];
-}
-
 
 const HomeContent = () => {
   const [image, setImage] = useState<string>("");
   const [displayImage, setDisplayImage] = useState<boolean>(false);
   const [fadeKey, setFadeKey] = useState<number>(0);
-  const [car, setCar] = useState<Car>({make: "n/a", model: "n/a", year: "n/a", rarity: "n/a", image: tempLogo });
+  const [car, setCar] = useState<Car>({make: "n/a", model: "n/a", year: "n/a", rarity: "n/a", link: "n/a"});
   const [loading, setLoading] = useState<boolean>(false);
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [featureCardsVisible, setFeatureCardsVisible] = useState<boolean>(false);
+  const [imageVisible, setImageVisible] = useState<boolean>(false);
+  const [carInfoVisible, setCarInfoVisible] = useState<boolean>(false);
+  const carInfoRef = useRef<HTMLDivElement>(null);
+  const imageRef = useRef<HTMLDivElement>(null);
+  const featureCardsRef = useRef<HTMLDivElement>(null);
+  
+  // Set up intersection observers for animations
+  useEffect(() => {
+    // Helper function to create and setup observers
+    const createObserver = (ref: RefObject<HTMLDivElement | null>, setVisible: Dispatch<SetStateAction<boolean>>) => {
+      if (!ref.current) return null;
+      
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              setVisible(true);
+              observer.disconnect(); // Stop observing once visible
+            }
+          });
+        },
+        { threshold: 0.2 } // Trigger when 20% of the element is visible
+      );
+      
+      observer.observe(ref.current);
+      return observer;
+    };
+    
+    // Create observers for each section
+    const featureCardsObserver = createObserver(featureCardsRef, setFeatureCardsVisible);
+    const imageObserver = createObserver(imageRef, setImageVisible);
+    const carInfoObserver = createObserver(carInfoRef, setCarInfoVisible);
+    
+    // Cleanup function
+    return () => {
+      if (featureCardsObserver) featureCardsObserver.disconnect();
+      if (imageObserver) imageObserver.disconnect();
+      if (carInfoObserver) carInfoObserver.disconnect();
+    };
+  }, []);
 
-  const handleImageUpload = async (event: any) => {
-    const file = event.target.files[0];
-    if (!file) {
-      return;
-    }
-
+  // Process the uploaded image and update the car details
+  const processImage = async (file: File) => {
     const objectUrl = URL.createObjectURL(file);
     const formData = new FormData();
     formData.append("file", file);
@@ -49,16 +73,24 @@ const HomeContent = () => {
     setLoading(true);
 
     try {
+      setImage(objectUrl);
+      setDisplayImage(true);
+      setFadeKey(fadeKey + 1);
+
+      setTimeout(() => {
+        imageRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+
       const result = await axios.post("http://localhost:8000/predict/", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      setImage(objectUrl);
-      setDisplayImage(true);
-      setFadeKey(fadeKey + 1);
-      setCar({make: getRandomElement(makes), model: getRandomElement(models), year: getRandomElement(years), rarity: getRandomElement(rarity), image: toyotaLogo});
-      
-      console.log(result.data.prediction);
+      const { make, model, year, rarity, link } = result.data;
+      setCar({make: make, model: model, year: year, rarity: rarity, link: link})
+
+      setTimeout(() => {
+        carInfoRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
     } catch (error) {
       console.error("Error uploading image:", error);
     } finally {
@@ -66,31 +98,164 @@ const HomeContent = () => {
     }
   };
 
+  // Drag and drop functionality event handlers
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    await processImage(file);
+  };
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const rect = e.currentTarget.getBoundingClientRect();
+    if (
+      e.clientX < rect.left ||
+      e.clientX > rect.right ||
+      e.clientY < rect.top ||
+      e.clientY > rect.bottom
+    ) {
+      setIsDragging(false);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    // Get the drop target element
+    const dropTarget = e.target as HTMLElement;
+    const uploadBox = dropTarget.closest('.upload-box');
+    
+    // Only process the drop if it's in the upload box
+    if (!uploadBox) return;
+
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+    await processImage(file);
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center w-full h-full p-20 gap-12 fade-in">
-      From regular traffic to 1-of-1 cars, WTC can detect any car brand from [insert year] with ___* accuracy. Don't believe us? Give us a try!
+    <div 
+      className="flex flex-col flex-1 items-center w-3/4 h-full p-8 px-12 gap-8 fade-in"
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+      >
+      <div className="flex flex-col items-center text-center w-3/4 gap-4">
+        <h1 className="text-2xl font-bold animate-gradient-text">
+          What's That Car?
+        </h1>
 
-      <div className="flex flex-row w-3/4 p-4">
-        <div className="flex flex-col flex-1 w-1/2 items-center justify-center border-r-[0.25px] border-gray- gap-12 p-4">
-          <Image
-            key={fadeKey}
-            src={displayImage ? image : placeholderImg}
-            alt="Uploaded Image"
-            width={350}
-            height={450}
-            style={{ objectFit: "contain" }}
-            className="rounded-xl fade-in border border-white/30"
-          />
+        <p className="text-md text-gray-300 leading-relaxed">
+          From daily commuters to rare supercars, our AI-powered car recognition system can identify any vehicle with 97%<sup className="text-[0.6rem]">†</sup> accuracy. Whether you're a car enthusiast or just curious about a special car you spotted, we've got you covered.
+        </p>
+
+        <div className="flex flex-row gap-8 text-sm text-gray-400">
+          <StatCard stat="97%" criteria="Accuracy" superscript="†"/>
+          <StatCard stat="5K+" criteria="Models" />
+          <StatCard stat="80+" criteria="Brands" />
+        </div>
+      </div>
+
+      <div className="flex justify-between">
+        <div 
+          ref={imageRef} 
+          className={`flex flex-col flex-1 items-center justify-center relative border-r-[0.25px] border-gray-600/50 gap-8 p-8 px-16 relative transition-all duration-700 ease-out ${
+            imageVisible 
+              ? 'opacity-100 transform translate-x-0' 
+              : 'opacity-0 transform -translate-x-10'
+          }`}
+        >
+          <label htmlFor="file-input" className={`cursor-pointer transform hover:scale-[1.01] transition-all duration-300 ease-in-out ${isDragging ? 'opacity-0' : 'opacity-100'}`}>
+            <div className="relative">
+              <Image
+                key={fadeKey}
+                draggable={false}
+                src={displayImage ? image : placeholderImg}
+                alt="Uploaded Image"
+                width={300}
+                height={450}
+                style={{ objectFit: "contain" }}
+                className="rounded-2xl fade-in border border-indigo-500/30 shadow-lg shadow-indigo-500/20"
+              />
+            </div>
+          </label>
           
-          <ImageUpload onChange={handleImageUpload} disabled={loading} />
+          {!isDragging && (
+            <div className="text-center flex flex-col">
+              <input
+                type="file"
+                accept="image/*"
+                id="file-input"
+                className="hidden"
+                onChange={handleImageUpload}
+                disabled={loading}
+              />
+
+              <div>
+                <label
+                  htmlFor="file-input"
+                  className={`inline-block px-6 py-3 rounded-2xl text-white text-md font-semibold bg-[#3B03FF]/80 transition-all duration-300 ease-in-out transform ${loading ? 'animate-gradient opacity-50 cursor-default hover:scale-100' : 'cursor-pointer hover:scale-105 shadow-lg hover:shadow-blue-500/20'}`}
+                  >
+                  {loading ? <span> Analyzing Image... </span> : <span> Upload Image </span>}
+                </label>
+
+                <div className="text-[0.7rem] mt-3 font-medium text-gray-400"> or drag and drop an image here </div>
+              </div>
+            </div>
+          )}
+
+          {isDragging && (
+            <div className="inset-0 bg-[#101827] backdrop-blur-md z-50 flex items-center justify-center upload-box rounded-2xl">
+              <div className="bg-white/10 p-8 rounded-2xl border-2 border-dashed border-white/50 text-white text-lg">
+                Drop your image here
+              </div>
+            </div>
+          )}
         </div>
 
-        <div className="flex flex-col w-1/2 items-center p-4">
-          <CarInfo make={car.make} model={car.model} year={car.year} rarity={car.rarity} image={car.image}/>
+        <div 
+          ref={carInfoRef} 
+          className={`flex flex-col flex-1 items-center p-8 px-16 relative transition-all duration-700 ease-out ${
+            carInfoVisible 
+              ? 'opacity-100 transform translate-x-0' 
+              : 'opacity-0 transform translate-x-10'
+          }`}
+        >
+          <CarInfo make={car.make} model={car.model} year={car.year} rarity={car.rarity} link={car.link} />
         </div>
+      </div>
+
+      <div ref={featureCardsRef} className={`flex flex-row gap-12 mt-4 transition-all duration-700 ease-out ${
+          featureCardsVisible 
+            ? 'opacity-100 transform translate-y-0' 
+            : 'opacity-0 transform translate-y-10'
+        }`}>
+          <FeatureCard icon="🚗" title="Instant Recognition" description="Get results in seconds" large={false} />
+          <FeatureCard icon="🎯" title="High Accuracy" description="97% recognition rate" large={false} />
+          <FeatureCard icon="🔍" title="Detailed Info" description="Make, model, year & more" large={false} />
+      </div>
+
+      <div className="text-[0.7rem] text-gray-600 mt-6 text-center max-w-2xl">
+        <p><sup>†</sup> Predictions may vary based on image quality, lighting conditions, viewing angle, and model rarity. <br/> Accuracy was determined with clear, well-lit photos of vehicles from standard viewing angles.</p>
       </div>
     </div>
   );
 };
+
 
 export default HomeContent;
