@@ -22,16 +22,21 @@ const HomeContent = () => {
   const [car, setCar] = useState<Car>({make: "n/a", model: "n/a", year: "n/a", rarity: "n/a", link: "n/a"});
   const [loading, setLoading] = useState<boolean>(false);
   const [isDragging, setIsDragging] = useState<boolean>(false);
-  const [featureCardsVisible, setFeatureCardsVisible] = useState<boolean>(false);
+
+  const [headerVisible, setHeaderVisible] = useState<boolean>(false);
+  const [statCardsVisible, setStatCardsVisible] = useState<boolean>(false);
   const [imageVisible, setImageVisible] = useState<boolean>(false);
   const [carInfoVisible, setCarInfoVisible] = useState<boolean>(false);
-  const carInfoRef = useRef<HTMLDivElement>(null);
+  const [featureCardsVisible, setFeatureCardsVisible] = useState<boolean>(false);
+
+  const headerRef = useRef<HTMLDivElement>(null);
+  const statCardsRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLDivElement>(null);
+  const carInfoRef = useRef<HTMLDivElement>(null);
   const featureCardsRef = useRef<HTMLDivElement>(null);
   
-  // Set up intersection observers for animations
   useEffect(() => {
-    // Helper function to create and setup observers
+    // Observer setup for animations
     const createObserver = (ref: RefObject<HTMLDivElement | null>, setVisible: Dispatch<SetStateAction<boolean>>) => {
       if (!ref.current) return null;
       
@@ -51,16 +56,20 @@ const HomeContent = () => {
       return observer;
     };
     
-    // Create observers for each section
-    const featureCardsObserver = createObserver(featureCardsRef, setFeatureCardsVisible);
+    // Observers for each section
+    const headerObserver = createObserver(headerRef, setHeaderVisible);
+    const statCardsObserver = createObserver(statCardsRef, setStatCardsVisible);
     const imageObserver = createObserver(imageRef, setImageVisible);
     const carInfoObserver = createObserver(carInfoRef, setCarInfoVisible);
-    
-    // Cleanup function
+    const featureCardsObserver = createObserver(featureCardsRef, setFeatureCardsVisible);
+
+    // Cleanup
     return () => {
       if (featureCardsObserver) featureCardsObserver.disconnect();
       if (imageObserver) imageObserver.disconnect();
       if (carInfoObserver) carInfoObserver.disconnect();
+      if (headerObserver) headerObserver.disconnect();
+      if (statCardsObserver) statCardsObserver.disconnect();
     };
   }, []);
 
@@ -148,14 +157,19 @@ const HomeContent = () => {
   };
 
   return (
-    <div 
+    <div
       className="flex flex-col flex-1 items-center w-3/4 h-full p-8 px-12 gap-8 fade-in"
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
+    >
+
+      {/* Title + description */}
+      <div 
+        ref={headerRef}
+        className={`flex flex-col items-center text-center w-3/4 gap-4 transition-all duration-700 ease-out ${ headerVisible  ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-10' }`}
       >
-      <div className="flex flex-col items-center text-center w-3/4 gap-4">
         <h1 className="text-2xl font-bold animate-gradient-text">
           What's That Car?
         </h1>
@@ -164,22 +178,34 @@ const HomeContent = () => {
           From daily commuters to rare supercars, our AI-powered car recognition system can identify any vehicle with 97%<sup className="text-[0.6rem]">†</sup> accuracy. Whether you're a car enthusiast or just curious about a special car you spotted, we've got you covered.
         </p>
 
-        <div className="flex flex-row gap-8 text-sm text-gray-400">
-          <StatCard stat="97%" criteria="Accuracy" superscript="†"/>
-          <StatCard stat="5K+" criteria="Models" />
-          <StatCard stat="80+" criteria="Brands" />
+        {/* Stat cards */}
+        <div 
+          ref={statCardsRef}
+          className="flex flex-row gap-8 text-sm text-gray-400"
+        >
+          <div className={`transition-all duration-700 ease-out ${ statCardsVisible ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-10' }`}>
+            <StatCard stat="97%" criteria="Accuracy" superscript="†"/>
+          </div>
+          
+          <div className={`transition-all duration-700 delay-150 ease-out ${ statCardsVisible  ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-10' }`}>
+            <StatCard stat="5K+" criteria="Models" />
+          </div>
+          
+          <div className={`transition-all duration-700 delay-300 ease-out ${ statCardsVisible  ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-10' }`}>
+            <StatCard stat="80+" criteria="Brands" />
+          </div>
         </div>
       </div>
 
+      {/* Image upload + car info results */}
       <div className="flex justify-between">
+        {/* Left half */}
         <div 
           ref={imageRef} 
-          className={`flex flex-col flex-1 items-center justify-center relative border-r-[0.25px] border-gray-600/50 gap-8 p-8 px-16 relative transition-all duration-700 ease-out ${
-            imageVisible 
-              ? 'opacity-100 transform translate-x-0' 
-              : 'opacity-0 transform -translate-x-10'
-          }`}
+          className={`flex flex-col flex-1 items-center justify-center relative border-r-[0.25px] border-gray-600/50 gap-8 p-8 px-16 relative transition-all duration-700 ease-out ${ imageVisible  ? 'opacity-100 transform translate-x-0' : 'opacity-0 transform -translate-x-10' }`}
         >
+
+          {/* Image preview */}
           <label htmlFor="file-input" className={`cursor-pointer transform hover:scale-[1.01] transition-all duration-300 ease-in-out ${isDragging ? 'opacity-0' : 'opacity-100'}`}>
             <div className="relative">
               <Image
@@ -195,6 +221,7 @@ const HomeContent = () => {
             </div>
           </label>
           
+          {/* Image upload */}
           {!isDragging && (
             <div className="text-center flex flex-col">
               <input
@@ -219,6 +246,7 @@ const HomeContent = () => {
             </div>
           )}
 
+          {/* Drag and drop */}
           {isDragging && (
             <div className="inset-0 bg-[#101827] backdrop-blur-md z-50 flex items-center justify-center upload-box rounded-2xl">
               <div className="bg-white/10 p-8 rounded-2xl border-2 border-dashed border-white/50 text-white text-lg">
@@ -228,28 +256,20 @@ const HomeContent = () => {
           )}
         </div>
 
-        <div 
-          ref={carInfoRef} 
-          className={`flex flex-col flex-1 items-center p-8 px-16 relative transition-all duration-700 ease-out ${
-            carInfoVisible 
-              ? 'opacity-100 transform translate-x-0' 
-              : 'opacity-0 transform translate-x-10'
-          }`}
-        >
+        {/* Right half (car info) */}
+        <div ref={carInfoRef} className={`flex flex-col flex-1 items-center p-8 px-16 relative transition-all duration-700 ease-out ${ carInfoVisible ? 'opacity-100 transform translate-x-0' : 'opacity-0 transform translate-x-10' }`} >
           <CarInfo make={car.make} model={car.model} year={car.year} rarity={car.rarity} link={car.link} />
         </div>
       </div>
 
-      <div ref={featureCardsRef} className={`flex flex-row gap-12 mt-4 transition-all duration-700 ease-out ${
-          featureCardsVisible 
-            ? 'opacity-100 transform translate-y-0' 
-            : 'opacity-0 transform translate-y-10'
-        }`}>
-          <FeatureCard icon="🚗" title="Instant Recognition" description="Get results in seconds" large={false} />
-          <FeatureCard icon="🎯" title="High Accuracy" description="97% recognition rate" large={false} />
-          <FeatureCard icon="🔍" title="Detailed Info" description="Make, model, year & more" large={false} />
+      {/* Feature cards */}
+      <div ref={featureCardsRef} className={`flex flex-row gap-12 mt-4 transition-all duration-700 ease-out ${ featureCardsVisible ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-10' }`}>
+        <FeatureCard icon="🚗" title="Instant Recognition" description="Get results in seconds" large={false} />
+        <FeatureCard icon="🎯" title="High Accuracy" description="97% recognition rate" large={false} />
+        <FeatureCard icon="🔍" title="Detailed Info" description="Make, model, year & more" large={false} />
       </div>
 
+      {/* Footnote */}
       <div className="text-[0.7rem] text-gray-600 mt-6 text-center max-w-2xl">
         <p><sup>†</sup> Predictions may vary based on image quality, lighting conditions, viewing angle, and model rarity. <br/> Accuracy was determined with clear, well-lit photos of vehicles from standard viewing angles.</p>
       </div>
