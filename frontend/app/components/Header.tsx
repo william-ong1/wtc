@@ -65,6 +65,16 @@ const Header = () => {
     setIsSignupOpen(false);
   };
 
+  const handleSwitchToSignup = (): void => {
+    setIsLoginOpen(false);
+    setIsSignupOpen(true);
+  };
+
+  const handleSwitchToLogin = (): void => {
+    setIsSignupOpen(false);
+    setIsLoginOpen(true);
+  };
+
   const handleSignOut = async (): Promise<void> => {
     try {
       // Set authReady to false during sign out to prevent UI flashing
@@ -182,6 +192,8 @@ const Header = () => {
         isLoginOpen={isLoginOpen}
         isSignupOpen={isSignupOpen}
         onClose={handleCloseModals}
+        onSwitchToSignup={handleSwitchToSignup}
+        onSwitchToLogin={handleSwitchToLogin}
       />
     </>
   ); 

@@ -14,6 +14,9 @@ interface CarInfoProps {
 
 const CarInfo: React.FC<CarInfoProps> = ({ make, model, year, rarity, link }) => {
   const [imageExists, setImageExists] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [animateContent, setAnimateContent] = useState(false);
+  const [prevProps, setPrevProps] = useState({ make, model, year, rarity });
 
   const checkImageExists = async (url: string) => {
     try {
@@ -24,11 +27,37 @@ const CarInfo: React.FC<CarInfoProps> = ({ make, model, year, rarity, link }) =>
     }
   };
 
+  // Check if props have changed to trigger animations
+  useEffect(() => {
+    if (make !== prevProps.make || model !== prevProps.model || 
+        year !== prevProps.year || rarity !== prevProps.rarity) {
+      // Content is changing, trigger exit animation
+      setAnimateContent(false);
+      setIsLoading(true);
+      
+      // After a short delay, update the previous props and trigger entrance animation
+      const timer = setTimeout(() => {
+        setPrevProps({ make, model, year, rarity });
+        setAnimateContent(true);
+        setIsLoading(false);
+      }, 300); // Match this with the animation duration
+      
+      return () => clearTimeout(timer);
+    }
+  }, [make, model, year, rarity, prevProps]);
+
+  // Initial animation on mount
+  useEffect(() => {
+    setAnimateContent(true);
+  }, []);
+
   useEffect(() => {
     const checkLogo = async () => {
       if (make && make !== "n/a") {
+        setIsLoading(true);
         const doesExist = await checkImageExists(`https://raw.githubusercontent.com/dangnelson/car-makes-icons/2a7f574ce813e1eeddcca955c87847bc5baa28b6/svgs/${make.toLowerCase().replace(/ /g, "%20")}.svg`);
         setImageExists(doesExist);
+        setIsLoading(false);
       } else {
         setImageExists(false);
       }
@@ -62,7 +91,7 @@ const CarInfo: React.FC<CarInfoProps> = ({ make, model, year, rarity, link }) =>
       className={`bg-gray-950 text-white w-[300px] rounded-2xl overflow-hidden transform transition-all duration-500 ease-in-out p-8 text-md border border-indigo-500/30 shadow-lg shadow-indigo-500/20 hover:scale-[1.01]`}
     >
       <div className="flex justify-center">
-        <div className="relative p-1">
+        <div className={`relative p-1 transition-all duration-300 ease-in-out ${isLoading ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
           <Image
             draggable={false}
             src={imageUrl}
@@ -73,12 +102,17 @@ const CarInfo: React.FC<CarInfoProps> = ({ make, model, year, rarity, link }) =>
               objectFit: "contain", 
               filter: `${imageExists ? 'invert(1) brightness(1)' : ''}`,
             }}
-            className="pointer-events-none fade-in"
+            className={`pointer-events-none transition-all duration-500 ease-in-out ${animateContent ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
           />
+          {isLoading && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="text-center p-2">
+      <div className={`text-center p-2 transition-all duration-300 ease-in-out ${animateContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
         <h2 className="text-2xl font-bold animate-gradient-text">
           {model !== "n/a" ? model : ""}
         </h2>
@@ -88,33 +122,33 @@ const CarInfo: React.FC<CarInfoProps> = ({ make, model, year, rarity, link }) =>
       </div>
 
       <div className="space-y-4 text-sm">
-        <div className="flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-all duration-300">
+        <div className={`flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-all duration-300 ease-in-out ${animateContent ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`} style={{ transitionDelay: '50ms' }}>
           <span className="font-medium text-gray-300"> Make </span>
           <span className="text-white"> {make !== "n/a" ? make : "-"} </span>
         </div>
 
-        <div className="flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-all duration-300">
+        <div className={`flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-all duration-300 ease-in-out ${animateContent ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`} style={{ transitionDelay: '100ms' }}>
           <span className="font-medium text-gray-300"> Model </span>
           <span className="text-white"> {model !== "n/a" ? model : "-"} </span>
         </div>
         
-        <div className="flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-all duration-300">
+        <div className={`flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-all duration-300 ease-in-out ${animateContent ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`} style={{ transitionDelay: '150ms' }}>
           <span className="font-medium text-gray-300"> Year </span>
           <span className="text-white"> {year !== "n/a" ? year : "-"} </span>
         </div>
 
-        <div className="flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-all duration-300">
+        <div className={`flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-all duration-300 ease-in-out ${animateContent ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`} style={{ transitionDelay: '200ms' }}>
           <span className="font-medium text-gray-300"> Rarity </span>
           <div className="flex items-center gap-2">
-            <span className={getRarityColor(rarity)}> {rarity !== "n/a" ? `${rarity}/100` : "-"} </span>
-            <span className="text-xs px-2 py-1 rounded-full bg-white/10">
+            {/* <span className={getRarityColor(rarity)}> {rarity !== "n/a" ? `${rarity}/100` : "-"} </span> */}
+            <span className={`text-xs px-2 py-1 rounded-full ${getRarityColor(rarity)} bg-white/10`}>
               {getRarityLabel(rarity)}
             </span>
           </div>
         </div>
 
         {make !== "n/a" && (
-        <div className="text-center">
+        <div className={`text-center transition-all duration-500 ease-in-out ${animateContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`} style={{ transitionDelay: '250ms' }}>
           <a 
             href={link} 
             target="_blank" 

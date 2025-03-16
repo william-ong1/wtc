@@ -22,6 +22,7 @@ const HomeContent = () => {
   const [car, setCar] = useState<Car>({make: "n/a", model: "n/a", year: "n/a", rarity: "n/a", link: "n/a"});
   const [loading, setLoading] = useState<boolean>(false);
   const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [imageTransitioning, setImageTransitioning] = useState<boolean>(false);
 
   const [headerVisible, setHeaderVisible] = useState<boolean>(false);
   const [statCardsVisible, setStatCardsVisible] = useState<boolean>(false);
@@ -80,6 +81,7 @@ const HomeContent = () => {
     formData.append("file", file);
 
     setLoading(true);
+    setImageTransitioning(true);
 
     try {
       setImage(objectUrl);
@@ -95,18 +97,44 @@ const HomeContent = () => {
       });
 
       const { make, model, year, rarity, link } = result.data;
-      setCar({make: make, model: model, year: year, rarity: rarity, link: link})
-
-      // Center the car info component without header offset
-      setTimeout(() => {
-        carInfoRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       
-        const header = document.getElementById('header');
-        const headerHeight = header ? header.offsetHeight : 0;
-        window.scrollBy(0, (headerHeight / 2) - 10); 
-      }, 100);      
+      // Update car info with a smooth transition
+      setCar({make: make, model: model, year: year, rarity: rarity, link: link});
+      
+      // Allow time for the car info to update before ending transition
+      setTimeout(() => {
+        setImageTransitioning(false);
+        
+        // Wait for the transition to complete before scrolling
+        setTimeout(() => {
+          // Get the car info element and header
+          const carInfoElement = carInfoRef.current;
+          const header = document.getElementById('header');
+          
+          if (carInfoElement && header) {
+            // Get dimensions
+            const headerHeight = header.offsetHeight;
+            const elementRect = carInfoElement.getBoundingClientRect();
+            const elementTop = window.scrollY + elementRect.top;
+            const elementHeight = elementRect.height;
+            const windowHeight = window.innerHeight;
+            
+            // Calculate the position that would place the element in the center
+            // of the available space below the header
+            const availableHeight = windowHeight - headerHeight;
+            const targetPosition = elementTop - headerHeight - (availableHeight / 2 - elementHeight / 2);
+            
+            // Scroll to position
+            window.scrollTo({
+              top: targetPosition,
+              behavior: 'smooth'
+            });
+          }
+        }, 100);
+      }, 300);
     } catch (error) {
       console.error("Error uploading image:", error);
+      setImageTransitioning(false);
     } finally {
       setLoading(false);
     }
@@ -221,7 +249,7 @@ const HomeContent = () => {
                 width={300}
                 height={450}
                 style={{ objectFit: "contain" }}
-                className="rounded-2xl fade-in border border-indigo-500/30 shadow-lg shadow-indigo-500/20"
+                className={`rounded-2xl border border-indigo-500/30 shadow-lg shadow-indigo-500/20 transition-all duration-500 ease-in-out ${imageTransitioning ? 'opacity-70 scale-[0.98]' : 'opacity-100 scale-100'}`}
               />
             </div>
           </label>
@@ -262,8 +290,13 @@ const HomeContent = () => {
         </div>
 
         {/* Right half (car info) */}
-        <div ref={carInfoRef} className={`flex flex-col flex-1 items-center p-8 px-16 relative transition-all duration-700 ease-out ${ carInfoVisible ? 'opacity-100 transform translate-x-0' : 'opacity-0 transform translate-x-10' }`} >
-          <CarInfo make={car.make} model={car.model} year={car.year} rarity={car.rarity} link={car.link} />
+        <div 
+          ref={carInfoRef} 
+          className={`flex flex-col flex-1 items-center p-8 px-16 relative transition-all duration-700 ease-out ${ carInfoVisible ? 'opacity-100 transform translate-x-0' : 'opacity-0 transform translate-x-10' }`} 
+        >
+          <div className={`transition-all duration-500 ease-in-out ${imageTransitioning ? 'opacity-70 scale-[0.98] blur-[1px]' : 'opacity-100 scale-100 blur-0'}`}>
+            <CarInfo make={car.make} model={car.model} year={car.year} rarity={car.rarity} link={car.link} />
+          </div>
         </div>
       </div>
 
