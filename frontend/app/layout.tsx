@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import AmplifyProvider from "./providers/AmplifyProvider";
 
 export const metadata: Metadata = {
-  title: "wtc - What's That Car?",
+  title: "What's That Car?",
   description: "Recognize any car on the road.",
 };
 
@@ -25,7 +26,9 @@ export default function RootLayout({
         <link rel="manifest" href="/favicon/site.webmanifest"/>
       </head>
       <body>
-        {children}
+        <AmplifyProvider>
+          {children}
+        </AmplifyProvider>
       </body>
     </html>
   );

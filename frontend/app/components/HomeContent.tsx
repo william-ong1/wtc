@@ -97,9 +97,14 @@ const HomeContent = () => {
       const { make, model, year, rarity, link } = result.data;
       setCar({make: make, model: model, year: year, rarity: rarity, link: link})
 
+      // Center the car info component without header offset
       setTimeout(() => {
         carInfoRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 100);
+      
+        const header = document.getElementById('header');
+        const headerHeight = header ? header.offsetHeight : 0;
+        window.scrollBy(0, (headerHeight / 2) - 10); 
+      }, 100);      
     } catch (error) {
       console.error("Error uploading image:", error);
     } finally {
@@ -158,7 +163,7 @@ const HomeContent = () => {
 
   return (
     <div
-      className="flex flex-col flex-1 items-center w-3/4 h-full p-8 px-12 gap-8 fade-in"
+      className="flex flex-col flex-1 items-center w-3/4 h-full py-8 px-12 gap-8 fade-in"
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDragOver={handleDragOver}

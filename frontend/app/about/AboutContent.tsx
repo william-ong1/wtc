@@ -5,21 +5,19 @@ import { FeatureCard } from "../components/Cards";
 import { useState, useEffect, useRef, RefObject, Dispatch, SetStateAction } from "react";
 
 const AboutContent = () => {
-  // State variables to track visibility of each section
-  const [aboutSectionVisible, setAboutSectionVisible] = useState(false);
-  const [howItWorksSectionVisible, setHowItWorksSectionVisible] = useState(false);
-  const [ctaSectionVisible, setCtaSectionVisible] = useState(false);
-  const [featureCardsVisible, setFeatureCardsVisible] = useState(false);
+
+  const [aboutSectionVisible, setAboutSectionVisible] = useState<boolean>(false);
+  const [howItWorksSectionVisible, setHowItWorksSectionVisible] = useState<boolean>(false);
+  const [featureCardsVisible, setFeatureCardsVisible] = useState<boolean>(false);
+  const [ctaSectionVisible, setCtaSectionVisible] = useState<boolean>(false);
   
-  // Refs for each section
-  const aboutSectionRef = useRef(null);
-  const howItWorksSectionRef = useRef(null);
-  const ctaSectionRef = useRef(null);
-  const featureCardsRef = useRef(null);
+  const aboutSectionRef = useRef<HTMLDivElement>(null);
+  const howItWorksSectionRef = useRef<HTMLDivElement>(null);
+  const featureCardsRef = useRef<HTMLDivElement>(null);
+  const ctaSectionRef = useRef<HTMLDivElement>(null);
   
-  // Set up intersection observers for animations
   useEffect(() => {
-    // Helper function to create and setup observers
+    // Observer setup for animations
     const createObserver = (ref: RefObject<HTMLDivElement | null>, setVisible: Dispatch<SetStateAction<boolean>>) => {
       if (!ref.current) return null;
       
@@ -47,8 +45,8 @@ const AboutContent = () => {
     // Cleanup function
     return () => {
       if (aboutSectionObserver) aboutSectionObserver.disconnect();
-      if (featureCardsObserver) featureCardsObserver.disconnect();
       if (howItWorksSectionObserver) howItWorksSectionObserver.disconnect();
+      if (featureCardsObserver) featureCardsObserver.disconnect();
       if (ctaSectionObserver) ctaSectionObserver.disconnect();
     };
   }, []);
@@ -60,12 +58,7 @@ const AboutContent = () => {
       {/* About Us */}
       <section 
         ref={aboutSectionRef}
-        className={`flex flex-col items-center text-center w-3/4 gap-4 transition-all duration-700 ease-out ${
-          aboutSectionVisible 
-            ? 'opacity-100 transform translate-y-0' 
-            : 'opacity-0 transform translate-y-10'
-        }`}
-      >
+        className={`flex flex-col items-center text-center w-3/4 gap-4 transition-all duration-700 ease-out ${ aboutSectionVisible  ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-10' }`}>
         <h1 className="text-2xl font-bold animate-gradient-text"> About Us </h1>
         <p className="text-gray-300 leading-relaxed">
           We're passionate about helping car enthusiasts and curious minds identify vehicles using the latest AI technology.
@@ -75,57 +68,31 @@ const AboutContent = () => {
       {/* How It Works */}
       <section 
         ref={howItWorksSectionRef}
-        className={`flex flex-col items-center text-center w-3/4 gap-4 transition-all duration-700 ease-out ${
-          howItWorksSectionVisible 
-            ? 'opacity-100 transform translate-y-0' 
-            : 'opacity-0 transform translate-y-10'
-        }`}
-      >
+        className={`flex flex-col items-center text-center w-3/4 gap-4 transition-all duration-700 ease-out ${ howItWorksSectionVisible ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-10' }`}>
         <h1 className="text-2xl font-bold animate-gradient-text"> How It Works </h1>
-        <div 
-          ref={featureCardsRef}
-          className="grid md:grid-cols-3 gap-8 w-4/5"
-        >
-          <div className={`transition-all duration-700 ease-out ${
-            featureCardsVisible 
-              ? 'opacity-100 transform translate-y-0' 
-              : 'opacity-0 transform translate-y-10'
-          }`}>
+        <div ref={featureCardsRef} className="grid md:grid-cols-3 gap-8 w-4/5" >
+          <div className={`transition-all duration-700 ease-out ${ featureCardsVisible ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-10' }`}>
             <FeatureCard icon="📸" title="Upload an Image" description="Take a photo of a car or upload one to our platform." large={true} />
           </div>
           
-          <div className={`transition-all duration-700 delay-150 ease-out ${
-            featureCardsVisible 
-              ? 'opacity-100 transform translate-y-0' 
-              : 'opacity-0 transform translate-y-10'
-          }`}>
+          <div className={`transition-all duration-700 delay-150 ease-out ${ featureCardsVisible ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-10' }`}>
             <FeatureCard icon="🤖" title="AI Analysis" description="The latest AI models will identify the make, model, year, and more." large={true} />
           </div>
           
-          <div className={`transition-all duration-700 delay-300 ease-out ${
-            featureCardsVisible 
-              ? 'opacity-100 transform translate-y-0' 
-              : 'opacity-0 transform translate-y-10'
-          }`}>
+          <div className={`transition-all duration-700 delay-300 ease-out ${ featureCardsVisible ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-10' }`}>
             <FeatureCard icon="📊" title="Get Results" description="Receive vehicle details in a clean and organized format." large={true} />
           </div>
         </div>
       </section>
 
       {/* CTA */}
-      <section 
-        ref={ctaSectionRef}
-        className={`flex flex-col items-center text-center w-3/4 gap-4 transition-all duration-700 ease-out ${
-          ctaSectionVisible 
-            ? 'opacity-100 transform translate-y-0' 
-            : 'opacity-0 transform translate-y-10'
-        }`}
-      >
+      <section ref={ctaSectionRef} className={`flex flex-col items-center text-center w-3/4 gap-4 transition-all duration-700 ease-out ${ ctaSectionVisible ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-10' }`}>
         <h1 className="text-2xl font-bold animate-gradient-text"> Ready to Identify A Car? </h1>
         <Link href="/" className="inline-block px-6 py-3 rounded-2xl text-white text-md font-semibold bg-[#3B03FF]/80 transition-all duration-300 ease-in-out transform cursor-pointer hover:scale-105 shadow-lg hover:shadow-blue-500/20">
           Try It Now!
         </Link>
       </section>
+
     </div>
   );
 };
