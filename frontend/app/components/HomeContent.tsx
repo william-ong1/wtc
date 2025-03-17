@@ -5,7 +5,9 @@ import { useState, useEffect, useRef, RefObject, Dispatch, SetStateAction } from
 import axios from "axios";
 import placeholderImg from "@/public/images/placeholder.png";
 import CarInfo from "./CarInfo";
-import { FeatureCard, StatCard } from "./Cards";
+import { StatCard } from "./Cards";
+import HomeFeatureCards from "./HomeFeatureCards";
+import DragAndDrop from "./DragAndDrop";
 
 type Car = {
   make: string;
@@ -21,7 +23,6 @@ const HomeContent = () => {
   const [fadeKey, setFadeKey] = useState<number>(0);
   const [car, setCar] = useState<Car>({make: "n/a", model: "n/a", year: "n/a", rarity: "n/a", link: "n/a"});
   const [loading, setLoading] = useState<boolean>(false);
-  const [isDragging, setIsDragging] = useState<boolean>(false);
   const [imageTransitioning, setImageTransitioning] = useState<boolean>(false);
 
   const [headerVisible, setHeaderVisible] = useState<boolean>(false);
@@ -78,7 +79,7 @@ const HomeContent = () => {
             }
           });
         },
-        { threshold: 0.1 } // Trigger when 20% of the element is visible
+        { threshold: 0.1 } // Trigger when 10% of the element is visible
       );
       
       observer.observe(ref.current);
@@ -144,64 +145,15 @@ const HomeContent = () => {
     }
   };
 
-  // Drag and drop functionality event handlers
+  // Handle file input change
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
     await processImage(file);
   };
 
-  const handleDragEnter = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const rect = e.currentTarget.getBoundingClientRect();
-    if (
-      e.clientX < rect.left ||
-      e.clientX > rect.right ||
-      e.clientY < rect.top ||
-      e.clientY > rect.bottom
-    ) {
-      setIsDragging(false);
-    }
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-  };
-
-  const handleDrop = async (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-
-    // Get the drop target element
-    const dropTarget = e.target as HTMLElement;
-    const uploadBox = dropTarget.closest('.upload-box');
-    
-    // Only process the drop if it's in the upload box
-    if (!uploadBox) return;
-
-    const file = e.dataTransfer.files[0];
-    if (!file) return;
-    await processImage(file);
-  };
-
   return (
-    <div
-      className="flex flex-col flex-1 items-center w-full lg:w-3/4 h-full py-4 lg:py-8 px-6 lg:px-12 lg:gap-8 fade-in"
-      onDragEnter={handleDragEnter}
-      onDragLeave={handleDragLeave}
-      onDragOver={handleDragOver}
-      onDrop={handleDrop}
-    >
-
+    <div className="flex flex-col flex-1 items-center w-full lg:w-3/4 h-full py-4 lg:py-8 px-6 lg:px-12 lg:gap-8 fade-in overflow-x-hidden max-w-full">
       {/* Title + description */}
       <div 
         ref={headerRef}
@@ -211,7 +163,7 @@ const HomeContent = () => {
           What's That Car?
         </h1>
 
-        <p className="text-sm lg:text-md text-gray-300 leading-relaxed">
+        <p className="text-sm lg:text-base text-gray-300 leading-relaxed">
           From daily commuters to rare supercars, our AI-powered car recognition system can identify any vehicle with 97%<sup className="text-[0.6rem]">†</sup> accuracy. Whether you're a car enthusiast or just curious about a special car you spotted, we've got you covered.
         </p>
 
@@ -235,32 +187,35 @@ const HomeContent = () => {
       </div>
 
       {/* Image upload + car info results */}
-      <div className="md:flex md:justify-between w-auto">
+      <div className="md:flex md:justify-between w-auto max-w-full overflow-x-hidden">
         {/* Left half */}
         <div 
           ref={imageRef} 
-          className={`flex flex-col flex-1 items-center justify-center relative md:border-r-[0.25px] border-gray-600/50 gap-8 p-4 py-8 lg:px-16 relative transition-all duration-700 ease-out ${ imageVisible  ? 'opacity-100 transform translate-x-0' : 'opacity-0 transform -translate-x-10' }`}
+          className={`flex flex-col flex-1 items-center justify-center relative md:border-r-[0.25px] border-gray-600/50 gap-8 p-4 py-8 lg:px-16 relative transition-all duration-700 ease-out max-w-full overflow-x-hidden ${ imageVisible  ? 'opacity-100 transform translate-x-0' : 'opacity-0 transform -translate-x-10' }`}
         >
-
-          {/* Image preview */}
-          <label htmlFor="file-input" className={`cursor-pointer transform hover:scale-[1.01] transition-all duration-300 ease-in-out ${isDragging ? 'opacity-0' : 'opacity-100'}`}>
-            <div className="relative">
-              <Image
-                key={fadeKey}
-                draggable={false}
-                src={displayImage ? image : placeholderImg}
-                alt="Uploaded Image"
-                width={300}
-                height={450}
-                style={{ objectFit: "contain" }}
-                className={`rounded-2xl border border-indigo-500/30 shadow-lg shadow-indigo-500/20 transition-all duration-500 ease-in-out ${imageTransitioning ? 'opacity-70 scale-[0.98]' : 'opacity-100 scale-100'}`}
-              />
-            </div>
-          </label>
-          
-          {/* Image upload */}
-          {!isDragging && (
-            <div className="text-center flex flex-col">
+          <DragAndDrop 
+            onFileDrop={processImage}
+            disabled={loading}
+            className="flex flex-col items-center justify-center w-full"
+          >
+            {/* Image preview */}
+            <label htmlFor="file-input" className="cursor-pointer transform hover:scale-[1.01] transition-all duration-300 ease-in-out">
+              <div className="relative">
+                <Image
+                  key={fadeKey}
+                  draggable={false}
+                  src={displayImage ? image : placeholderImg}
+                  alt="Uploaded Image"
+                  width={300}
+                  height={450}
+                  style={{ objectFit: "contain" }}
+                  className={`rounded-2xl border border-indigo-500/30 shadow-lg shadow-indigo-500/20 transition-all duration-500 ease-in-out ${imageTransitioning ? 'opacity-70 scale-[0.98]' : 'opacity-100 scale-100'}`}
+                />
+              </div>
+            </label>
+            
+            {/* Image upload */}
+            <div className="text-center flex flex-col mt-8">
               <input
                 type="file"
                 accept="image/*"
@@ -273,7 +228,7 @@ const HomeContent = () => {
               <div>
                 <label
                   htmlFor="file-input"
-                  className={`inline-block px-6 py-3 rounded-2xl text-white text-md font-semibold bg-[#3B03FF]/80 transition-all duration-300 ease-in-out transform ${loading ? 'animate-gradient opacity-50 cursor-default hover:scale-100' : 'cursor-pointer hover:scale-105 shadow-lg hover:shadow-blue-500/20'}`}
+                  className={`inline-block px-6 py-3 rounded-2xl text-white text-base font-semibold bg-[#3B03FF]/80 hover:bg-[#4B13FF] transition-all duration-300 ease-in-out transform ${loading ? 'animate-gradient opacity-50 cursor-default hover:scale-100' : 'cursor-pointer hover:scale-105 shadow-lg hover:shadow-blue-500/20'}`}
                   >
                   {loading ? <span> Analyzing Image... </span> : <span> Upload Image </span>}
                 </label>
@@ -281,22 +236,13 @@ const HomeContent = () => {
                 <div className="text-[0.6rem] lg:text-[0.7rem] mt-2 font-medium text-gray-400"> or drag and drop an image here </div>
               </div>
             </div>
-          )}
-
-          {/* Drag and drop */}
-          {isDragging && (
-            <div className="inset-0 bg-[#101827] backdrop-blur-md z-50 flex items-center justify-center upload-box rounded-2xl">
-              <div className="bg-white/10 p-8 rounded-2xl border-2 border-dashed border-white/50 text-white text-lg">
-                Drop your image here
-              </div>
-            </div>
-          )}
+          </DragAndDrop>
         </div>
 
         {/* Right half (car info) */}
         <div 
           ref={carInfoRef} 
-          className={`flex flex-col flex-1 items-center p-4 py-8 lg:px-16 relative transition-all duration-700 ease-out ${ carInfoVisible ? 'opacity-100 transform translate-x-0' : 'opacity-0 transform translate-x-10' }`} 
+          className={`flex flex-col flex-1 items-center p-4 py-4 lg:py-8 lg:px-16 relative transition-all duration-700 ease-out max-w-full overflow-x-hidden ${ carInfoVisible ? 'opacity-100 transform translate-x-0' : 'opacity-0 transform translate-x-10' }`} 
         >
           <div className={`transition-all duration-500 ease-in-out ${imageTransitioning ? 'opacity-70 scale-[0.98] blur-[1px]' : 'opacity-100 scale-100 blur-0'}`}>
             <CarInfo make={car.make} model={car.model} year={car.year} rarity={car.rarity} link={car.link} />
@@ -305,11 +251,9 @@ const HomeContent = () => {
       </div>
 
       {/* Feature cards */}
-      {/* <div ref={featureCardsRef} className={`flex flex-col lg:flex-row gap-8 mt-4 transition-all duration-700 ease-out ${ featureCardsVisible ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-10' }`}>
-        <FeatureCard icon="🚗" title="Instant Recognition" description="Get results in seconds" large={false} />
-        <FeatureCard icon="🎯" title="High Accuracy" description="97% recognition rate" large={false} />
-        <FeatureCard icon="🔍" title="Detailed Info" description="Make, model, year & more" large={false} />
-      </div> */}
+      <div ref={featureCardsRef}>
+        <HomeFeatureCards visible={featureCardsVisible} />
+      </div>
 
       {/* Footnote */}
       <div className="flex flex-col text-[0.5rem] lg:text-[0.7rem] text-gray-700 mt-6 text-center max-w-2xl gap-1">
@@ -319,6 +263,5 @@ const HomeContent = () => {
     </div>
   );
 };
-
 
 export default HomeContent;

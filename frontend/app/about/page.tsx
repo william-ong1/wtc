@@ -7,7 +7,7 @@ export default function About() {
     <div className="flex flex-col min-h-[100dvh] font-montserrat">
       <Header />
 
-      <main className="flex flex-row flex-1 justify-center items-stretch text-center shadow-md">
+      <main className="flex flex-row flex-1 justify-center items-stretch text-center shadow-md pt-16">
         <AboutContent />
       </main>
 

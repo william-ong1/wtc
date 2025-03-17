@@ -22,11 +22,15 @@ html, body {
   padding: 0;
   color: var(--foreground);
   background: var(--background);
+  overflow-x: hidden;
+  width: 100%;
 }
 
 body {
   display: flex;
   flex-direction: column;
+  height: fit-content;
+  max-width: 100vw;
 }
 
 @keyframes gradient {
