@@ -258,13 +258,13 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
         </div>
 
         {error && (
-          <div className="bg-red-500/20 border border-red-500/50 text-red-200 p-3 rounded-xl mb-4 animate-fadeIn text-xs">
+          <div className="bg-red-500/20 border border-red-500/50 text-red-200 p-3 rounded-xl mb-4 animate-fadeIn text-sm">
             {error}
           </div>
         )}
 
         {successMessage && (
-          <div className="bg-green-500/20 border border-green-500/50 text-green-200 p-3 rounded-xl mb-4 animate-fadeIn text-xs">
+          <div className="bg-green-500/20 border border-green-500/50 text-green-200 p-3 rounded-xl mb-4 animate-fadeIn text-sm">
             {successMessage}
           </div>
         )}
@@ -273,7 +273,7 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
           <>
             <form onSubmit={handleLogin} className="space-y-4 animate-fadeIn">
               <div>
-                <label htmlFor="email" className="block text-xs font-medium text-gray-300 mb-1 text-left">
+                <label htmlFor="email" className="block text-md font-medium text-gray-300 mb-1 text-left">
                   Email or Username
                 </label>
                 <input
@@ -281,14 +281,14 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-900/90 border border-indigo-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs"
+                  className="w-full px-3 py-2 bg-gray-900/90 border border-indigo-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                   required
                   disabled={isProcessing}
                   placeholder="Email or Username"
                 />
               </div>
               <div>
-                <label htmlFor="password" className="block text-xs font-medium text-gray-300 mb-1 text-left">
+                <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-1 text-left">
                   Password
                 </label>
                 <input
@@ -296,7 +296,7 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-900/90 border border-indigo-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs"
+                  className="w-full px-3 py-2 bg-gray-900/90 border border-indigo-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                   required
                   disabled={isProcessing}
                   placeholder="Password"
@@ -306,7 +306,7 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
               <div className="flex justify-end">
                 <button 
                   type="button" 
-                  className="text-xs text-indigo-400 hover:text-indigo-300"
+                  className="text-sm text-indigo-400 hover:text-indigo-300"
                   onClick={handleForgotPasswordClick}
                 >
                   Forgot password?
@@ -315,7 +315,7 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
               
               <button
                 type="submit"
-                className="w-full px-4 py-2 bg-[#3B03FF]/80 hover:bg-[#4B13FF] rounded-xl shadow-lg shadow-blue-900/20 transition-all duration-300 ease-in-out text-white font-medium disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98] text-xs"
+                className="w-full px-4 py-2 bg-[#3B03FF]/80 hover:bg-[#4B13FF] rounded-xl shadow-lg shadow-blue-900/20 transition-all duration-300 ease-in-out text-white font-medium disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98] text-sm"
                 disabled={isProcessing}
               >
                 {isProcessing ? 'Logging in...' : 'Log In'}
@@ -323,10 +323,10 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
             </form>
             
             <div className="mt-6 text-center animate-fadeIn">
-              <p className="text-gray-400 text-xs">
+              <p className="text-gray-400 text-sm">
                 Don't have an account?{' '}
                 <button 
-                  className="text-indigo-400 hover:text-indigo-300 font-medium transition-colors duration-200 text-xs"
+                  className="text-indigo-400 hover:text-indigo-300 font-medium transition-colors duration-200 text-sm"
                   onClick={switchToSignup}
                 >
                   Sign up
@@ -340,7 +340,7 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
           <>
             <form onSubmit={handleSignup} className="space-y-4 animate-fadeIn">
               <div>
-                <label htmlFor="username" className="block text-xs font-medium text-gray-300 mb-1 text-left">
+                <label htmlFor="username" className="block text-sm font-medium text-gray-300 mb-1 text-left">
                   Username
                 </label>
                 <input
@@ -348,14 +348,14 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-900/90 border border-indigo-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs"
+                  className="w-full px-3 py-2 bg-gray-900/90 border border-indigo-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                   required
                   disabled={isProcessing}
                   placeholder="Choose a username"
                 />
               </div>
               <div>
-                <label htmlFor="email" className="block text-xs font-medium text-gray-300 mb-1 text-left">
+                <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1 text-left">
                   Email
                 </label>
                 <input
@@ -363,14 +363,14 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-900/90 border border-indigo-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs"
+                  className="w-full px-3 py-2 bg-gray-900/90 border border-indigo-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                   required
                   disabled={isProcessing}
                   placeholder="Enter your email"
                 />
               </div>
               <div>
-                <label htmlFor="password" className="block text-xs font-medium text-gray-300 mb-1 text-left">
+                <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-1 text-left">
                   Password
                 </label>
                 <input
@@ -378,7 +378,7 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-900/90 border border-indigo-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs"
+                  className="w-full px-3 py-2 bg-gray-900/90 border border-indigo-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                   required
                   disabled={isProcessing}
                   placeholder="Create a password"
@@ -386,7 +386,7 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
               </div>
               <button
                 type="submit"
-                className="w-full px-4 py-2 bg-[#3B03FF]/80 hover:bg-[#4B13FF] rounded-xl shadow-lg shadow-blue-900/20 transition-all duration-300 ease-in-out text-white font-medium disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98] text-xs"
+                className="w-full px-4 py-2 bg-[#3B03FF]/80 hover:bg-[#4B13FF] rounded-xl shadow-lg shadow-blue-900/20 transition-all duration-300 ease-in-out text-white font-medium disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98] text-sm"
                 disabled={isProcessing}
               >
                 {isProcessing ? 'Signing up...' : 'Sign Up'}
@@ -394,10 +394,10 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
             </form>
             
             <div className="mt-6 text-center animate-fadeIn">
-              <p className="text-gray-400 text-xs">
+              <p className="text-gray-400 text-sm">
                 Already have an account?{' '}
                 <button 
-                  className="text-indigo-400 hover:text-indigo-300 font-medium transition-colors duration-200 text-xs"
+                  className="text-indigo-400 hover:text-indigo-300 font-medium transition-colors duration-200 text-sm"
                   onClick={switchToLogin}
                 >
                   Log in
@@ -411,7 +411,7 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
           <>
             <form onSubmit={handleForgotPassword} className="space-y-4 animate-fadeIn">
               <div>
-                <label htmlFor="reset-email" className="block text-xs font-medium text-gray-300 mb-1 text-left">
+                <label htmlFor="reset-email" className="block text-sm font-medium text-gray-300 mb-1 text-left">
                   Email
                 </label>
                 <input
@@ -419,7 +419,7 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-900/90 border border-indigo-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs"
+                  className="w-full px-3 py-2 bg-gray-900/90 border border-indigo-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                   required
                   disabled={isProcessing}
                   placeholder="Enter your email"
@@ -430,14 +430,14 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
                 <button
                   type="button"
                   onClick={handleBackToLogin}
-                  className="flex-1 px-4 py-2 bg-gray-900/90 hover:bg-gray-800/70 hover:border-indigo-500/30 rounded-xl text-white font-medium disabled:opacity-50 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] text-xs"
+                  className="flex-1 px-4 py-2 bg-gray-900/90 hover:bg-gray-800/70 hover:border-indigo-500/30 rounded-xl text-white font-medium disabled:opacity-50 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] text-sm"
                   disabled={isProcessing}
                 >
                   Back
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-[#3B03FF]/80 hover:bg-[#4B13FF] rounded-xl shadow-lg shadow-blue-900/20 transition-all duration-300 ease-in-out text-white font-medium disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98] text-xs"
+                  className="flex-1 px-4 py-2 bg-[#3B03FF]/80 hover:bg-[#4B13FF] rounded-xl shadow-lg shadow-blue-900/20 transition-all duration-300 ease-in-out text-white font-medium disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98] text-sm"
                   disabled={isProcessing}
                 >
                   {isProcessing ? 'Sending...' : 'Send Reset Code'}
@@ -451,7 +451,7 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
           <>
             <form onSubmit={handleResetPasswordConfirmation} className="space-y-4 animate-fadeIn">
               <div>
-                <label htmlFor="reset-code" className="block text-xs font-medium text-gray-300 mb-1 text-left">
+                <label htmlFor="reset-code" className="block text-sm font-medium text-gray-300 mb-1 text-left">
                   Reset Code
                 </label>
                 <input
@@ -459,14 +459,14 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
                   type="text"
                   value={confirmationCode}
                   onChange={(e) => setConfirmationCode(e.target.value)}
-                  className="w-full px-3 py-2 bg-[#1a1245] border border-indigo-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs"
+                  className="w-full px-3 py-2 bg-[#1a1245] border border-indigo-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                   required
                   disabled={isProcessing}
                   placeholder="Enter the code from your email"
                 />
               </div>
               <div>
-                <label htmlFor="new-password" className="block text-xs font-medium text-gray-300 mb-1 text-left">
+                <label htmlFor="new-password" className="block text-sm font-medium text-gray-300 mb-1 text-left">
                   New Password
                 </label>
                 <input
@@ -474,7 +474,7 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
                   type="password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full px-3 py-2 bg-[#1a1245] border border-indigo-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs"
+                  className="w-full px-3 py-2 bg-[#1a1245] border border-indigo-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                   required
                   disabled={isProcessing}
                   placeholder="Enter your new password"
@@ -485,14 +485,14 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
                 <button
                   type="button"
                   onClick={handleBackToLogin}
-                  className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600/90 hover:border-indigo-500/30 rounded-xl text-white font-medium disabled:opacity-50 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] text-xs"
+                  className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600/90 hover:border-indigo-500/30 rounded-xl text-white font-medium disabled:opacity-50 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] text-sm"
                   disabled={isProcessing}
                 >
                   Back
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-[#4B13FF] rounded-xl shadow-lg shadow-blue-900/20 transition-all duration-300 ease-in-out text-white font-medium disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98] text-xs"
+                  className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-[#4B13FF] rounded-xl shadow-lg shadow-blue-900/20 transition-all duration-300 ease-in-out text-white font-medium disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98] text-sm"
                   disabled={isProcessing}
                 >
                   {isProcessing ? 'Resetting...' : 'Reset Password'}
@@ -505,7 +505,7 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
         {showConfirmation && (
           <form onSubmit={handleConfirmSignup} className="space-y-4 animate-fadeIn">
             <div>
-              <label htmlFor="username" className="block text-xs font-medium text-gray-300 mb-1 text-left">
+              <label htmlFor="username" className="block text-sm font-medium text-gray-300 mb-1 text-left">
                 Username
               </label>
               <input
@@ -513,13 +513,13 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-3 py-2 bg-[#1a1245] border border-indigo-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs"
+                className="w-full px-3 py-2 bg-[#1a1245] border border-indigo-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                 required
                 disabled={isProcessing}
               />
             </div>
             <div>
-              <label htmlFor="code" className="block text-xs font-medium text-gray-300 mb-1 text-left">
+              <label htmlFor="code" className="block text-sm font-medium text-gray-300 mb-1 text-left">
                 Confirmation Code
               </label>
               <input
@@ -527,18 +527,18 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
                 type="text"
                 value={confirmationCode}
                 onChange={(e) => setConfirmationCode(e.target.value)}
-                className="w-full px-3 py-2 bg-[#1a1245] border border-indigo-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs"
+                className="w-full px-3 py-2 bg-[#1a1245] border border-indigo-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                 required
                 disabled={isProcessing}
                 placeholder="Enter the code from your email"
               />
-              <p className="text-xs text-gray-400 mt-1">
+              <p className="text-sm text-gray-400 mt-1">
                 Please check your email for the confirmation code.
               </p>
             </div>
             <button
               type="submit"
-              className="w-full px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-[#4B13FF] rounded-xl shadow-lg shadow-blue-900/20 transition-all duration-300 ease-in-out text-white font-medium disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98] text-xs"
+              className="w-full px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-[#4B13FF] rounded-xl shadow-lg shadow-blue-900/20 transition-all duration-300 ease-in-out text-white font-medium disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98] text-sm"
               disabled={isProcessing}
             >
               {isProcessing ? 'Confirming...' : 'Confirm Sign Up'}

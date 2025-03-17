@@ -88,7 +88,7 @@ const CarInfo: React.FC<CarInfoProps> = ({ make, model, year, rarity, link }) =>
   return (
     <div 
       id="info" 
-      className={`bg-gray-950 text-white w-[300px] rounded-2xl overflow-hidden transform transition-all duration-500 ease-in-out p-8 text-md border border-indigo-500/30 shadow-lg shadow-indigo-500/20 hover:scale-[1.01]`}
+      className={`bg-gray-950 text-white w-[300px] rounded-2xl overflow-hidden transform transition-all duration-500 ease-in-out p-8 text-base border border-indigo-500/30 shadow-lg shadow-indigo-500/20 hover:scale-[1.01]`}
     >
       <div className="flex justify-center">
         <div className={`relative p-1 transition-all duration-300 ease-in-out ${isLoading ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
