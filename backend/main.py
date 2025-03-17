@@ -8,20 +8,19 @@ import os
 from dotenv import load_dotenv
 import json
 
-
 # Load environment variables
 load_dotenv()
 
 # Configure Gemini API
 genai.configure(api_key=os.getenv('GOOGLE_API_KEY'))
-model = genai.GenerativeModel('gemini-2.0-flash')  # Changed to gemini-pro-vision for image analysis
+model = genai.GenerativeModel('gemini-2.0-flash')
 
 app = FastAPI()
 
 # Enable CORS - TODO: change before deploy
 app.add_middleware(
 	CORSMiddleware,
-	allow_origins=["http://localhost:3000"],
+	allow_origins=["http://localhost:3000", "http://192.168.0.24:3000"],
 	allow_credentials=True,
 	allow_methods=["*"],
 	allow_headers=["*"],

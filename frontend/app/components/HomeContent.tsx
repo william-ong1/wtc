@@ -36,6 +36,34 @@ const HomeContent = () => {
   const carInfoRef = useRef<HTMLDivElement>(null);
   const featureCardsRef = useRef<HTMLDivElement>(null);
   
+  // Reusable function to scroll to an element with header adjustment
+  const scrollToElementWithHeaderAdjustment = (elementRef: RefObject<HTMLElement | null>, delay: number = 0) => {
+    setTimeout(() => {
+      const element = elementRef.current;
+      const header = document.getElementById('header');
+      
+      if (element) {
+        // Get dimensions
+        const headerHeight = header?.offsetHeight || 0;
+        const elementRect = element.getBoundingClientRect();
+        const elementTop = window.scrollY + elementRect.top;
+        const elementHeight = elementRect.height;
+        const windowHeight = window.innerHeight;
+        
+        // Calculate the position that would place the element in the center
+        // of the available space below the header
+        const availableHeight = windowHeight - headerHeight;
+        const targetPosition = elementTop - headerHeight - (availableHeight / 2 - elementHeight / 2);
+        
+        // Scroll to position
+        window.scrollTo({
+          top: targetPosition,
+          behavior: 'smooth'
+        });
+      }
+    }, delay);
+  };
+  
   useEffect(() => {
     // Observer setup for animations
     const createObserver = (ref: RefObject<HTMLDivElement | null>, setVisible: Dispatch<SetStateAction<boolean>>) => {
@@ -50,7 +78,7 @@ const HomeContent = () => {
             }
           });
         },
-        { threshold: 0.2 } // Trigger when 20% of the element is visible
+        { threshold: 0.1 } // Trigger when 20% of the element is visible
       );
       
       observer.observe(ref.current);
@@ -88,11 +116,12 @@ const HomeContent = () => {
       setDisplayImage(true);
       setFadeKey(fadeKey + 1);
 
-      setTimeout(() => {
-        imageRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 100);
+      // Scroll to the image with header adjustment
+      scrollToElementWithHeaderAdjustment(imageRef, 100);
 
-      const result = await axios.post("http://localhost:8000/predict/", formData, {
+      // Use the same host as the frontend but with the backend port
+      const backendUrl = `http://${window.location.hostname}:8000/predict/`;
+      const result = await axios.post(backendUrl, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
@@ -104,34 +133,9 @@ const HomeContent = () => {
       // Allow time for the car info to update before ending transition
       setTimeout(() => {
         setImageTransitioning(false);
-        
-        // Wait for the transition to complete before scrolling
-        setTimeout(() => {
-          // Get the car info element and header
-          const carInfoElement = carInfoRef.current;
-          const header = document.getElementById('header');
-          
-          if (carInfoElement && header) {
-            // Get dimensions
-            const headerHeight = header.offsetHeight;
-            const elementRect = carInfoElement.getBoundingClientRect();
-            const elementTop = window.scrollY + elementRect.top;
-            const elementHeight = elementRect.height;
-            const windowHeight = window.innerHeight;
-            
-            // Calculate the position that would place the element in the center
-            // of the available space below the header
-            const availableHeight = windowHeight - headerHeight;
-            const targetPosition = elementTop - headerHeight - (availableHeight / 2 - elementHeight / 2);
-            
-            // Scroll to position
-            window.scrollTo({
-              top: targetPosition,
-              behavior: 'smooth'
-            });
-          }
-        }, 100);
+        scrollToElementWithHeaderAdjustment(carInfoRef, 100);
       }, 300);
+
     } catch (error) {
       console.error("Error uploading image:", error);
       setImageTransitioning(false);
@@ -191,7 +195,7 @@ const HomeContent = () => {
 
   return (
     <div
-      className="flex flex-col flex-1 items-center w-3/4 h-full py-8 px-12 gap-8 fade-in"
+      className="flex flex-col flex-1 items-center w-full lg:w-3/4 h-full py-4 lg:py-8 px-6 lg:px-12 lg:gap-8 fade-in"
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDragOver={handleDragOver}
@@ -201,20 +205,20 @@ const HomeContent = () => {
       {/* Title + description */}
       <div 
         ref={headerRef}
-        className={`flex flex-col items-center text-center w-3/4 gap-4 transition-all duration-700 ease-out ${ headerVisible  ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-10' }`}
+        className={`flex flex-col items-center text-center w-full lg:w-3/4 gap-2 lg:gap-4 transition-all duration-700 ease-out ${ headerVisible  ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-10' }`}
       >
-        <h1 className="text-2xl font-bold animate-gradient-text">
+        <h1 className="text-xl lg:text-2xl font-bold animate-gradient-text">
           What's That Car?
         </h1>
 
-        <p className="text-md text-gray-300 leading-relaxed">
+        <p className="text-sm lg:text-md text-gray-300 leading-relaxed">
           From daily commuters to rare supercars, our AI-powered car recognition system can identify any vehicle with 97%<sup className="text-[0.6rem]">†</sup> accuracy. Whether you're a car enthusiast or just curious about a special car you spotted, we've got you covered.
         </p>
 
         {/* Stat cards */}
         <div 
           ref={statCardsRef}
-          className="flex flex-row gap-8 text-sm text-gray-400"
+          className="flex flex-row gap-8 text-xs lg:text-sm text-gray-400"
         >
           <div className={`transition-all duration-700 ease-out ${ statCardsVisible ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-10' }`}>
             <StatCard stat="97%" criteria="Accuracy" superscript="†"/>
@@ -231,11 +235,11 @@ const HomeContent = () => {
       </div>
 
       {/* Image upload + car info results */}
-      <div className="flex justify-between">
+      <div className="md:flex md:justify-between w-auto">
         {/* Left half */}
         <div 
           ref={imageRef} 
-          className={`flex flex-col flex-1 items-center justify-center relative border-r-[0.25px] border-gray-600/50 gap-8 p-8 px-16 relative transition-all duration-700 ease-out ${ imageVisible  ? 'opacity-100 transform translate-x-0' : 'opacity-0 transform -translate-x-10' }`}
+          className={`flex flex-col flex-1 items-center justify-center relative md:border-r-[0.25px] border-gray-600/50 gap-8 p-4 py-8 lg:px-16 relative transition-all duration-700 ease-out ${ imageVisible  ? 'opacity-100 transform translate-x-0' : 'opacity-0 transform -translate-x-10' }`}
         >
 
           {/* Image preview */}
@@ -274,7 +278,7 @@ const HomeContent = () => {
                   {loading ? <span> Analyzing Image... </span> : <span> Upload Image </span>}
                 </label>
 
-                <div className="text-[0.7rem] mt-3 font-medium text-gray-400"> or drag and drop an image here </div>
+                <div className="text-[0.6rem] lg:text-[0.7rem] mt-2 font-medium text-gray-400"> or drag and drop an image here </div>
               </div>
             </div>
           )}
@@ -292,7 +296,7 @@ const HomeContent = () => {
         {/* Right half (car info) */}
         <div 
           ref={carInfoRef} 
-          className={`flex flex-col flex-1 items-center p-8 px-16 relative transition-all duration-700 ease-out ${ carInfoVisible ? 'opacity-100 transform translate-x-0' : 'opacity-0 transform translate-x-10' }`} 
+          className={`flex flex-col flex-1 items-center p-4 py-8 lg:px-16 relative transition-all duration-700 ease-out ${ carInfoVisible ? 'opacity-100 transform translate-x-0' : 'opacity-0 transform translate-x-10' }`} 
         >
           <div className={`transition-all duration-500 ease-in-out ${imageTransitioning ? 'opacity-70 scale-[0.98] blur-[1px]' : 'opacity-100 scale-100 blur-0'}`}>
             <CarInfo make={car.make} model={car.model} year={car.year} rarity={car.rarity} link={car.link} />
@@ -301,15 +305,16 @@ const HomeContent = () => {
       </div>
 
       {/* Feature cards */}
-      <div ref={featureCardsRef} className={`flex flex-row gap-12 mt-4 transition-all duration-700 ease-out ${ featureCardsVisible ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-10' }`}>
+      {/* <div ref={featureCardsRef} className={`flex flex-col lg:flex-row gap-8 mt-4 transition-all duration-700 ease-out ${ featureCardsVisible ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-10' }`}>
         <FeatureCard icon="🚗" title="Instant Recognition" description="Get results in seconds" large={false} />
         <FeatureCard icon="🎯" title="High Accuracy" description="97% recognition rate" large={false} />
         <FeatureCard icon="🔍" title="Detailed Info" description="Make, model, year & more" large={false} />
-      </div>
+      </div> */}
 
       {/* Footnote */}
-      <div className="text-[0.7rem] text-gray-600 mt-6 text-center max-w-2xl">
-        <p><sup>†</sup> Predictions may vary based on image quality, lighting conditions, viewing angle, and model rarity. <br/> Accuracy was determined with clear, well-lit photos of vehicles from standard viewing angles.</p>
+      <div className="flex flex-col text-[0.5rem] lg:text-[0.7rem] text-gray-700 mt-6 text-center max-w-2xl gap-1">
+        <p><sup>†</sup> Predictions may vary based on image quality, lighting conditions, viewing angle, and model rarity. Accuracy was determined with clear, well-lit photos of vehicles from standard viewing angles.</p>
+        <p> <span className="text-[0.6rem] lg:text-[0.8rem]">‡</span> Rarity is AI-generated and may vary. It is a dynamic estimate based on the car's appearance and the data available. </p> 
       </div>
     </div>
   );

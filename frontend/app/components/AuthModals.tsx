@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { signIn, signUp, confirmSignUp, resetPassword, confirmResetPassword } from 'aws-amplify/auth';
 
@@ -11,21 +12,17 @@ interface AuthModalsProps {
   onSwitchToLogin: () => void;
 }
 
-export default function AuthModals({ 
-  isLoginOpen, 
-  isSignupOpen, 
-  onClose, 
-  onSwitchToSignup, 
-  onSwitchToLogin 
-}: AuthModalsProps) {
+export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitchToSignup, onSwitchToLogin }: AuthModalsProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [email, setEmail] = useState('');
   const [confirmationCode, setConfirmationCode] = useState('');
+
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [showResetPasswordConfirmation, setShowResetPasswordConfirmation] = useState(false);
-  const [newPassword, setNewPassword] = useState('');
+
   const [error, setError] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
@@ -37,9 +34,17 @@ export default function AuthModals({
     if (isLoginOpen || isSignupOpen) {
       setIsVisible(true);
       setIsClosing(false);
+      // Prevent scrolling on the body when modal is open
+      document.body.style.overflow = 'hidden';
     } else {
       setIsVisible(false);
+      // Re-enable scrolling when modal is closed
+      document.body.style.overflow = '';
     }
+
+    return () => {
+      document.body.style.overflow = '';
+    };
   }, [isLoginOpen, isSignupOpen]);
 
   const handleCloseWithAnimation = () => {
@@ -215,12 +220,12 @@ export default function AuthModals({
       }}
     >
       <div 
-        className={`bg-[#0f0a2c] rounded-xl p-6 w-full max-w-sm shadow-lg shadow-indigo-500/20 border border-indigo-500/20 relative transition-all duration-300 ease-in-out
+        className={`bg-gray-950 rounded-3xl p-6 w-full max-w-sm shadow-lg shadow-indigo-500/20 border border-indigo-500/30 relative transition-all duration-300 ease-in-out
           ${isVisible && !isClosing ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4'}
         `}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Close button - repositioned to be clearly visible */}
+        {/* Close button */}
         <button 
           onClick={handleCloseWithAnimation}
           className="absolute right-4 top-4 text-gray-400 hover:text-white p-1 z-10 transition-colors duration-200"
@@ -233,8 +238,8 @@ export default function AuthModals({
         </button>
         
         {/* Logo at the top center */}
-        <div className="flex justify-center mb-4">
-          <img 
+        <div className="flex justify-center">
+          <Image
             src="/images/logo.png" 
             alt="Logo" 
             width={100} 
@@ -276,7 +281,7 @@ export default function AuthModals({
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="w-full px-3 py-2 bg-[#1a1245] border border-indigo-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 bg-gray-900/90 border border-indigo-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   required
                   disabled={isProcessing}
                   placeholder="Email or Username"
@@ -291,7 +296,7 @@ export default function AuthModals({
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-3 py-2 bg-[#1a1245] border border-indigo-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 bg-gray-900/90 border border-indigo-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   required
                   disabled={isProcessing}
                   placeholder="Password"
@@ -310,7 +315,7 @@ export default function AuthModals({
               
               <button
                 type="submit"
-                className="w-full px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 rounded-xl shadow-lg shadow-blue-900/20 transition-all duration-300 ease-in-out text-white font-medium disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98]"
+                className="w-full px-4 py-2 bg-[#3B03FF]/80 hover:bg-[#4B13FF] rounded-xl shadow-lg shadow-blue-900/20 transition-all duration-300 ease-in-out text-white font-medium disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98]"
                 disabled={isProcessing}
               >
                 {isProcessing ? 'Logging in...' : 'Log In'}
@@ -343,7 +348,7 @@ export default function AuthModals({
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="w-full px-3 py-2 bg-[#1a1245] border border-indigo-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 bg-gray-900/90 border border-indigo-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   required
                   disabled={isProcessing}
                   placeholder="Choose a username"
@@ -358,7 +363,7 @@ export default function AuthModals({
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-3 py-2 bg-[#1a1245] border border-indigo-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 bg-gray-900/90 border border-indigo-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   required
                   disabled={isProcessing}
                   placeholder="Enter your email"
@@ -373,7 +378,7 @@ export default function AuthModals({
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-3 py-2 bg-[#1a1245] border border-indigo-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 bg-gray-900/90 border border-indigo-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   required
                   disabled={isProcessing}
                   placeholder="Create a password"
@@ -381,7 +386,7 @@ export default function AuthModals({
               </div>
               <button
                 type="submit"
-                className="w-full px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 rounded-xl shadow-lg shadow-blue-900/20 transition-all duration-300 ease-in-out text-white font-medium disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98]"
+                className="w-full px-4 py-2 bg-[#3B03FF]/80 hover:bg-[#4B13FF] rounded-xl shadow-lg shadow-blue-900/20 transition-all duration-300 ease-in-out text-white font-medium disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98]"
                 disabled={isProcessing}
               >
                 {isProcessing ? 'Signing up...' : 'Sign Up'}
@@ -414,7 +419,7 @@ export default function AuthModals({
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="w-full px-3 py-2 bg-[#1a1245] border border-indigo-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 bg-gray-900/90 border border-indigo-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   required
                   disabled={isProcessing}
                   placeholder="Enter your email"
@@ -425,14 +430,14 @@ export default function AuthModals({
                 <button
                   type="button"
                   onClick={handleBackToLogin}
-                  className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-xl text-white font-medium disabled:opacity-50 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                  className="flex-1 px-4 py-2 bg-gray-900/90 hover:bg-gray-800/70 hover:border-indigo-500/30 rounded-xl text-white font-medium disabled:opacity-50 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
                   disabled={isProcessing}
                 >
                   Back
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 rounded-xl shadow-lg shadow-blue-900/20 transition-all duration-300 ease-in-out text-white font-medium disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98]"
+                  className="flex-1 px-4 py-2 bg-[#3B03FF]/80 hover:bg-[#4B13FF] rounded-xl shadow-lg shadow-blue-900/20 transition-all duration-300 ease-in-out text-white font-medium disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98]"
                   disabled={isProcessing}
                 >
                   {isProcessing ? 'Sending...' : 'Send Reset Code'}
@@ -480,14 +485,14 @@ export default function AuthModals({
                 <button
                   type="button"
                   onClick={handleBackToLogin}
-                  className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-xl text-white font-medium disabled:opacity-50 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                  className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600/90 hover:border-indigo-500/30 rounded-xl text-white font-medium disabled:opacity-50 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
                   disabled={isProcessing}
                 >
                   Back
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 rounded-xl shadow-lg shadow-blue-900/20 transition-all duration-300 ease-in-out text-white font-medium disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98]"
+                  className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-[#4B13FF] rounded-xl shadow-lg shadow-blue-900/20 transition-all duration-300 ease-in-out text-white font-medium disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98]"
                   disabled={isProcessing}
                 >
                   {isProcessing ? 'Resetting...' : 'Reset Password'}
@@ -533,7 +538,7 @@ export default function AuthModals({
             </div>
             <button
               type="submit"
-              className="w-full px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 rounded-xl shadow-lg shadow-blue-900/20 transition-all duration-300 ease-in-out text-white font-medium disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98]"
+              className="w-full px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-[#4B13FF] rounded-xl shadow-lg shadow-blue-900/20 transition-all duration-300 ease-in-out text-white font-medium disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98]"
               disabled={isProcessing}
             >
               {isProcessing ? 'Confirming...' : 'Confirm Sign Up'}

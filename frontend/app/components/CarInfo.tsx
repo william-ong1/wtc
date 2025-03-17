@@ -112,7 +112,7 @@ const CarInfo: React.FC<CarInfoProps> = ({ make, model, year, rarity, link }) =>
         </div>
       </div>
 
-      <div className={`text-center p-2 transition-all duration-300 ease-in-out ${animateContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+      <div className={`text-center p-4 transition-all duration-300 ease-in-out ${animateContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
         <h2 className="text-2xl font-bold animate-gradient-text">
           {model !== "n/a" ? model : ""}
         </h2>
@@ -138,7 +138,7 @@ const CarInfo: React.FC<CarInfoProps> = ({ make, model, year, rarity, link }) =>
         </div>
 
         <div className={`flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-all duration-300 ease-in-out ${animateContent ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`} style={{ transitionDelay: '200ms' }}>
-          <span className="font-medium text-gray-300"> Rarity </span>
+          <span className="font-medium text-gray-300"> Rarity<sup className='text-[0.6rem]'>‡</sup> </span>
           <div className="flex items-center gap-2">
             {/* <span className={getRarityColor(rarity)}> {rarity !== "n/a" ? `${rarity}/100` : "-"} </span> */}
             <span className={`text-xs px-2 py-1 rounded-full ${getRarityColor(rarity)} bg-white/10`}>
