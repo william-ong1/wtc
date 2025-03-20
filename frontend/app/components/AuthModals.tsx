@@ -221,7 +221,7 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
     >
       <div 
         className={`bg-gray-950 rounded-3xl p-6 w-full max-w-xs shadow-lg shadow-indigo-500/20 border border-indigo-500/30 relative transition-all duration-300 ease-in-out
-          ${isVisible && !isClosing ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4'}
+          ${isVisible && !isClosing ? 'opacity-100 scale-100 ' : 'opacity-0 scale-100'}
         `}
         onClick={(e) => e.stopPropagation()}
       >
@@ -258,20 +258,20 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
         </div>
 
         {error && (
-          <div className="bg-red-500/20 border border-red-500/50 text-red-200 p-3 rounded-xl mb-4 animate-fadeIn text-sm">
+          <div className="bg-red-500/20 border border-red-500/50 text-red-200 p-3 rounded-xl mb-4 fade-in text-sm">
             {error}
           </div>
         )}
 
         {successMessage && (
-          <div className="bg-green-500/20 border border-green-500/50 text-green-200 p-3 rounded-xl mb-4 animate-fadeIn text-sm">
+          <div className="bg-green-500/20 border border-green-500/50 text-green-200 p-3 rounded-xl mb-4 fade-in text-sm">
             {successMessage}
           </div>
         )}
 
         {isLoginOpen && !showConfirmation && !showForgotPassword && !showResetPasswordConfirmation && (
           <>
-            <form onSubmit={handleLogin} className="space-y-4 animate-fadeIn">
+            <form onSubmit={handleLogin} className="space-y-4 fade-in">
               <div>
                 <label htmlFor="email" className="block text-md font-medium text-gray-300 mb-1 text-left">
                   Email or Username
@@ -322,7 +322,7 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
               </button>
             </form>
             
-            <div className="mt-6 text-center animate-fadeIn">
+            <div className="mt-6 text-center fade-in">
               <p className="text-gray-400 text-sm">
                 Don't have an account?{' '}
                 <button 
@@ -338,7 +338,7 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
 
         {isSignupOpen && !showConfirmation && (
           <>
-            <form onSubmit={handleSignup} className="space-y-4 animate-fadeIn">
+            <form onSubmit={handleSignup} className="space-y-4 fade-in">
               <div>
                 <label htmlFor="username" className="block text-sm font-medium text-gray-300 mb-1 text-left">
                   Username
@@ -393,7 +393,7 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
               </button>
             </form>
             
-            <div className="mt-6 text-center animate-fadeIn">
+            <div className="mt-6 text-center fade-in">
               <p className="text-gray-400 text-sm">
                 Already have an account?{' '}
                 <button 
@@ -409,7 +409,7 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
 
         {showForgotPassword && (
           <>
-            <form onSubmit={handleForgotPassword} className="space-y-4 animate-fadeIn">
+            <form onSubmit={handleForgotPassword} className="space-y-4 fade-in">
               <div>
                 <label htmlFor="reset-email" className="block text-sm font-medium text-gray-300 mb-1 text-left">
                   Email
@@ -449,7 +449,7 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
 
         {showResetPasswordConfirmation && (
           <>
-            <form onSubmit={handleResetPasswordConfirmation} className="space-y-4 animate-fadeIn">
+            <form onSubmit={handleResetPasswordConfirmation} className="space-y-4 fade-in">
               <div>
                 <label htmlFor="reset-code" className="block text-sm font-medium text-gray-300 mb-1 text-left">
                   Reset Code
@@ -503,7 +503,7 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
         )}
 
         {showConfirmation && (
-          <form onSubmit={handleConfirmSignup} className="space-y-4 animate-fadeIn">
+          <form onSubmit={handleConfirmSignup} className="space-y-4 fade-in">
             <div>
               <label htmlFor="username" className="block text-sm font-medium text-gray-300 mb-1 text-left">
                 Username

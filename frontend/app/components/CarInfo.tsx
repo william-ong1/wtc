@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import tempLogo from "@/public/images/temp-logo.png";
 import React, { useState, useEffect } from 'react';
+import cloudSave from "@/public/images/cloud-save.svg";
 
 interface CarInfoProps {
   make: string;
@@ -10,9 +11,10 @@ interface CarInfoProps {
   year: string;
   rarity: string;
   link: string;
+  onSaveResults: (e: React.MouseEvent<HTMLButtonElement>) => void;
 };
 
-const CarInfo: React.FC<CarInfoProps> = ({ make, model, year, rarity, link }) => {
+const CarInfo: React.FC<CarInfoProps> = ({ make, model, year, rarity, link, onSaveResults }) => {
   const [imageExists, setImageExists] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [animateContent, setAnimateContent] = useState(false);
@@ -35,12 +37,11 @@ const CarInfo: React.FC<CarInfoProps> = ({ make, model, year, rarity, link }) =>
       setAnimateContent(false);
       setIsLoading(true);
       
-      // After a short delay, update the previous props and trigger entrance animation
       const timer = setTimeout(() => {
         setPrevProps({ make, model, year, rarity });
         setAnimateContent(true);
         setIsLoading(false);
-      }, 300); // Match this with the animation duration
+      }, 300);
       
       return () => clearTimeout(timer);
     }
@@ -91,13 +92,13 @@ const CarInfo: React.FC<CarInfoProps> = ({ make, model, year, rarity, link }) =>
       className={`bg-gray-950 text-white w-[300px] rounded-2xl overflow-hidden transform transition-all duration-500 ease-in-out p-8 text-base border border-indigo-500/30 shadow-lg shadow-indigo-500/20 hover:scale-[1.01]`}
     >
       <div className="flex justify-center">
-        <div className={`relative p-1 transition-all duration-300 ease-in-out ${isLoading ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
+        <div className={`relative items-center justify-center transition-all duration-300 ease-in-out ${isLoading ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
           <Image
             draggable={false}
             src={imageUrl}
             alt={`${make} logo`}
-            width={160}
-            height={160}
+            width={120}
+            height={120}
             style={{ 
               objectFit: "contain", 
               filter: `${imageExists ? 'invert(1) brightness(1)' : ''}`,
@@ -140,7 +141,6 @@ const CarInfo: React.FC<CarInfoProps> = ({ make, model, year, rarity, link }) =>
         <div className={`flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-all duration-300 ease-in-out ${animateContent ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`} style={{ transitionDelay: '200ms' }}>
           <span className="font-medium text-gray-300"> Rarity<sup className='text-[0.6rem]'>‡</sup> </span>
           <div className="flex items-center gap-2">
-            {/* <span className={getRarityColor(rarity)}> {rarity !== "n/a" ? `${rarity}/100` : "-"} </span> */}
             <span className={`text-xs px-2 py-1 rounded-full ${getRarityColor(rarity)} bg-white/10`}>
               {getRarityLabel(rarity)}
             </span>
@@ -148,17 +148,20 @@ const CarInfo: React.FC<CarInfoProps> = ({ make, model, year, rarity, link }) =>
         </div>
 
         {make !== "n/a" && (
-        <div className={`text-center transition-all duration-500 ease-in-out ${animateContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`} style={{ transitionDelay: '250ms' }}>
-          <a 
-            href={link} 
-            target="_blank" 
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold bg-[#3B03FF]/80 transition-all duration-300 ease-in-out transform hover:scale-105"
-          >
-            View Details
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-            </svg>
+        <div className={`flex flex-col items-center text-center transition-all duration-500 ease-in-out gap-4 ${animateContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`} style={{ transitionDelay: '250ms' }}>
+          <a href={link} target="_blank" className="text-white underline transition-all duration-300 ease-in-out text-sm hover:text-indigo-400 hover:scale-105">
+            View More Details
           </a>
+
+          <button onClick={onSaveResults} className="inline-flex text-base items-center gap-2 px-6 py-3 rounded-xl font-semibold bg-[#3B03FF]/80 transition-transform duration-300 ease-in-out transform hover:scale-105">
+            Save Results
+            <Image
+              src={cloudSave}
+              alt="Save icon"
+              width={16}
+              height={16}
+            />
+          </button>
         </div>
       )}
       </div>

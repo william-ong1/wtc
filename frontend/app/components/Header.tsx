@@ -137,7 +137,8 @@ const Header = () => {
   return (
     <>
       <div id="header" className="fixed top-0 z-[100] w-full text-white">
-        {/* Gradient background with blur effect */}
+        
+        {/* Background with blur effect */}
         <div className="absolute inset-0 bg-[#0f0a2c]/30 backdrop-blur-md border-b-[0.25px] border-indigo-500/30 shadow-md shadow-indigo-500/20"></div>
         
         <div className="relative flex items-center justify-between p-1 lg:p-3 max-w-full">
@@ -160,20 +161,8 @@ const Header = () => {
             </div>
           </div>
 
-          {/* Hamburger menu button (mobile only) */}
-          <button 
-            id="hamburger-button"
-            className="lg:hidden flex flex-col justify-center items-center w-10 h-10 rounded-lg hover:bg-indigo-900/10 transition-all duration-300 ease-in-out"
-            onClick={toggleMenu}
-            aria-label="Menu"
-          >
-            <span className="block w-5 h-0.5 bg-gradient-to-r from-blue-400 to-indigo-400 mb-1"></span>
-            <span className="block w-5 h-0.5 bg-gradient-to-r from-blue-400 to-indigo-400 mb-1"></span>
-            <span className="block w-5 h-0.5 bg-gradient-to-r from-blue-400 to-indigo-400"></span>
-          </button>
-
           {/* Desktop navigation */}
-          <div className="hidden lg:flex mr-1">
+          <div className="hidden lg:flex mr-1 items-center justify-center">
             {/* Nav bar links */}
             <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center justify-center space-x-4 max-w-[90%] overflow-x-hidden">
               <NavLink label="Home" />
@@ -189,7 +178,7 @@ const Header = () => {
               {authReady && !isLoading ? (
                 <div className="transition-all duration-500 ease-in-out">
                   {username ? (
-                    <div className="flex items-center gap-3 animate-fadeIn">
+                    <div className="flex items-center gap-3 fade-in">
                       <Link href="/profile" className="text-sm font-medium text-white hover:text-indigo-300 transition-colors duration-300">
                         Hello, {username}
                       </Link>
@@ -201,46 +190,49 @@ const Header = () => {
                       </button>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-3 animate-fadeIn">
-                      <button 
-                        onClick={handleLoginClick}
-                        className="px-4 py-2 text-sm font-medium border border-indigo-500/20 hover:border-indigo-500/40 rounded-2xl bg-white/5 hover:bg-white/10 text-white transition-all duration-300 ease-in-out hover:scale-105 transform hover:shadow-sm hover:shadow-indigo-500/10"
-                      >
+                    <div className="flex items-center gap-3 fade-in">
+                      <button onClick={handleLoginClick} className="px-4 py-2 text-sm font-medium border border-indigo-500/20 hover:border-indigo-500/40 rounded-2xl bg-white/5 hover:bg-white/10 text-white transition-all duration-300 ease-in-out hover:scale-105 transform hover:shadow-sm hover:shadow-indigo-500/10">
                         Log in
                       </button>
-                      <button 
-                        onClick={handleSignupClick}
-                        className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 rounded-2xl shadow-lg shadow-blue-900/20 transition-all duration-300 ease-in-out transform hover:scale-105 text-sm font-medium"
-                      >
+                      <button onClick={handleSignupClick} className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 rounded-2xl shadow-lg shadow-blue-900/20 transition-all duration-300 ease-in-out transform hover:scale-105 text-sm font-medium">
                         Sign up
                       </button>
                     </div>
                   )}
                 </div>
               ) : (
-                <div className="flex items-center gap-3 animate-pulse">
-                  <div className="w-24 h-9 rounded-2xl bg-white/5"></div>
-                </div>
+                <div> </div>
               )}
             </div>
           </div>
+
+          {/* Hamburger menu button - mobile */}
+          <button 
+            id="hamburger-button"
+            className="lg:hidden flex flex-col justify-center items-center w-10 h-10 rounded-lg hover:bg-indigo-900/10 transition-all duration-300 ease-in-out fade-in"
+            onClick={toggleMenu}
+            aria-label="Menu"
+          >
+            <span className="block w-5 h-0.5 bg-blue-500 mb-1"></span>
+            <span className="block w-5 h-0.5 bg-blue-500 mb-1"></span>
+            <span className="block w-5 h-0.5 bg-blue-500"></span>
+          </button>
         </div>
       </div>
-
+      
       {/* Mobile menu dropdown */}
       <div 
         id="mobile-menu"
         className={`lg:hidden fixed right-0 top-[60px] z-[99] bg-gray-950 backdrop-blur-md border-l-[0.25px] border-b-[0.25px] border-indigo-500/30 shadow-lg shadow-indigo-500/20 rounded-bl-2xl overflow-hidden transition-all duration-500 ease-in-out ${isMenuOpen ? 'max-h-[500px] w-[250px] opacity-100 translate-y-0' : 'max-h-0 w-[250px] opacity-0 -translate-y-4'}`}
       >
         <div className={`p-4 flex flex-col gap-4 transition-all duration-500 ease-in-out ${isMenuOpen ? 'opacity-100 translate-y-0 delay-100' : 'opacity-0 -translate-y-4'}`}>
-          {/* Mobile navigation links */}
+
           <div className="flex flex-col gap-2 border-b border-indigo-500/20 pb-4">
             <NavLink label="Home" onClick={() => setIsMenuOpen(false)} />
             <NavLink label="Explore" onClick={() => setIsMenuOpen(false)} />
             <NavLink label="About" onClick={() => setIsMenuOpen(false)} />
           </div>
           
-          {/* Mobile auth buttons */}
           <div className="flex flex-col gap-3 pt-2">
             {authReady && !isLoading ? (
               username ? (

@@ -8,6 +8,8 @@ import CarInfo from "./CarInfo";
 import { StatCard } from "./Cards";
 import HomeFeatureCards from "./HomeFeatureCards";
 import DragAndDrop from "./DragAndDrop";
+import { useAuth } from '../providers/AmplifyProvider';
+import AuthModals from './AuthModals';
 
 type Car = {
   make: string;
@@ -30,6 +32,10 @@ const HomeContent = () => {
   const [imageVisible, setImageVisible] = useState<boolean>(false);
   const [carInfoVisible, setCarInfoVisible] = useState<boolean>(false);
   const [featureCardsVisible, setFeatureCardsVisible] = useState<boolean>(false);
+
+  const [isLoginOpen, setIsLoginOpen] = useState<boolean>(false);
+  const [isSignupOpen, setIsSignupOpen] = useState<boolean>(false);
+  const { user, refreshAuthState } = useAuth();
 
   const headerRef = useRef<HTMLDivElement>(null);
   const statCardsRef = useRef<HTMLDivElement>(null);
@@ -152,115 +158,155 @@ const HomeContent = () => {
     await processImage(file);
   };
 
+  const handleCloseModals = (): void => {
+    // Refresh auth state when modals are closed to ensure UI is updated
+    refreshAuthState();
+    setIsLoginOpen(false);
+    setIsSignupOpen(false);
+  };
+
+  const handleSwitchToSignup = (): void => {
+    setIsLoginOpen(false);
+    setIsSignupOpen(true);
+  };
+
+  const handleSwitchToLogin = (): void => {
+    setIsSignupOpen(false);
+    setIsLoginOpen(true);
+  };
+
+  const onSaveResultsClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    // Save results to user's account
+    if (user) {
+      console.log('Saving results to user account...');
+    } else {
+      console.log('User not authenticated. Redirecting to login...');
+      setIsLoginOpen(true);
+    }
+  };
+
+
   return (
-    <div className="flex flex-col flex-1 items-center w-full lg:w-3/4 h-full py-4 lg:py-8 px-6 lg:px-12 lg:gap-8 fade-in overflow-x-hidden max-w-full">
-      {/* Title + description */}
-      <div 
-        ref={headerRef}
-        className={`flex flex-col items-center text-center w-full lg:w-3/4 gap-2 lg:gap-4 transition-all duration-700 ease-out ${ headerVisible  ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-10' }`}
-      >
-        <h1 className="text-xl lg:text-2xl font-bold animate-gradient-text">
-          What's That Car?
-        </h1>
-
-        <p className="text-sm lg:text-base text-gray-300 leading-relaxed">
-          From daily commuters to rare supercars, our AI-powered car recognition system can identify any vehicle with 97%<sup className="text-[0.6rem]">†</sup> accuracy. Whether you're a car enthusiast or just curious about a special car you spotted, we've got you covered.
-        </p>
-
-        {/* Stat cards */}
+    <>
+      <div className="flex flex-col flex-1 items-center w-full lg:w-3/4 h-full py-4 lg:py-8 px-6 lg:px-12 lg:gap-8 fade-in overflow-x-hidden max-w-full">
+        {/* Title + description */}
         <div 
-          ref={statCardsRef}
-          className="flex flex-row gap-8 text-xs lg:text-sm text-gray-400"
+          ref={headerRef}
+          className={`flex flex-col items-center text-center w-full lg:w-3/4 gap-2 lg:gap-4 transition-all duration-700 ease-out ${ headerVisible  ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-10' }`}
         >
-          <div className={`transition-all duration-700 ease-out ${ statCardsVisible ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-10' }`}>
-            <StatCard stat="97%" criteria="Accuracy" superscript="†"/>
-          </div>
-          
-          <div className={`transition-all duration-700 delay-150 ease-out ${ statCardsVisible  ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-10' }`}>
-            <StatCard stat="5K+" criteria="Models" />
-          </div>
-          
-          <div className={`transition-all duration-700 delay-300 ease-out ${ statCardsVisible  ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-10' }`}>
-            <StatCard stat="80+" criteria="Brands" />
-          </div>
-        </div>
-      </div>
+          <h1 className="text-2xl font-bold animate-gradient-text">
+            What's That Car?
+          </h1>
 
-      {/* Image upload + car info results */}
-      <div className="md:flex md:justify-between w-auto max-w-full overflow-x-hidden">
-        {/* Left half */}
-        <div 
-          ref={imageRef} 
-          className={`flex flex-col flex-1 items-center justify-center relative md:border-r-[0.25px] border-gray-600/50 gap-8 p-4 py-8 lg:px-16 relative transition-all duration-700 ease-out max-w-full overflow-x-hidden ${ imageVisible  ? 'opacity-100 transform translate-x-0' : 'opacity-0 transform -translate-x-10' }`}
-        >
-          <DragAndDrop 
-            onFileDrop={processImage}
-            disabled={loading}
-            className="flex flex-col items-center justify-center w-full"
+          <p className="text-sm lg:text-base text-gray-300 leading-relaxed">
+            From daily commuters to rare supercars, our AI-powered car recognition system can identify any vehicle with 97%<sup className="text-[0.6rem]">†</sup> accuracy. Whether you're a car enthusiast or just curious about a special car you spotted, we've got you covered.
+          </p>
+
+          {/* Stat cards */}
+          <div 
+            ref={statCardsRef}
+            className="flex flex-row gap-8 text-xs lg:text-sm text-gray-400"
           >
-            {/* Image preview */}
-            <label htmlFor="file-input" className="cursor-pointer transform hover:scale-[1.01] transition-all duration-300 ease-in-out">
-              <div className="relative">
-                <Image
-                  key={fadeKey}
-                  draggable={false}
-                  src={displayImage ? image : placeholderImg}
-                  alt="Uploaded Image"
-                  width={300}
-                  height={450}
-                  style={{ objectFit: "contain" }}
-                  className={`rounded-2xl border border-indigo-500/30 shadow-lg shadow-indigo-500/20 transition-all duration-500 ease-in-out ${imageTransitioning ? 'opacity-70 scale-[0.98]' : 'opacity-100 scale-100'}`}
-                />
-              </div>
-            </label>
-            
-            {/* Image upload */}
-            <div className="text-center flex flex-col mt-8">
-              <input
-                type="file"
-                accept="image/*"
-                id="file-input"
-                className="hidden"
-                onChange={handleImageUpload}
-                disabled={loading}
-              />
-
-              <div>
-                <label
-                  htmlFor="file-input"
-                  className={`inline-block px-6 py-3 rounded-2xl text-white text-base font-semibold bg-[#3B03FF]/80 hover:bg-[#4B13FF] transition-all duration-300 ease-in-out transform ${loading ? 'animate-gradient opacity-50 cursor-default hover:scale-100' : 'cursor-pointer hover:scale-105 shadow-lg hover:shadow-blue-500/20'}`}
-                  >
-                  {loading ? <span> Analyzing Image... </span> : <span> Upload Image </span>}
-                </label>
-
-                <div className="text-[0.6rem] lg:text-[0.7rem] mt-2 font-medium text-gray-400"> or drag and drop an image here </div>
-              </div>
+            <div className={`transition-all duration-700 ease-out ${ statCardsVisible ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-10' }`}>
+              <StatCard stat="97%" criteria="Accuracy" superscript="†"/>
             </div>
-          </DragAndDrop>
-        </div>
-
-        {/* Right half (car info) */}
-        <div 
-          ref={carInfoRef} 
-          className={`flex flex-col flex-1 items-center p-4 py-4 lg:py-8 lg:px-16 relative transition-all duration-700 ease-out max-w-full overflow-x-hidden ${ carInfoVisible ? 'opacity-100 transform translate-x-0' : 'opacity-0 transform translate-x-10' }`} 
-        >
-          <div className={`transition-all duration-500 ease-in-out ${imageTransitioning ? 'opacity-70 scale-[0.98] blur-[1px]' : 'opacity-100 scale-100 blur-0'}`}>
-            <CarInfo make={car.make} model={car.model} year={car.year} rarity={car.rarity} link={car.link} />
+            
+            <div className={`transition-all duration-700 delay-150 ease-out ${ statCardsVisible  ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-10' }`}>
+              <StatCard stat="5K+" criteria="Models" />
+            </div>
+            
+            <div className={`transition-all duration-700 delay-300 ease-out ${ statCardsVisible  ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-10' }`}>
+              <StatCard stat="80+" criteria="Brands" />
+            </div>
           </div>
         </div>
+
+        {/* Image upload + car info results */}
+        <div className="md:flex md:justify-between w-auto max-w-full overflow-x-hidden">
+          {/* Left half */}
+          <div 
+            ref={imageRef} 
+            className={`flex flex-col flex-1 items-center justify-center relative md:border-r-[0.25px] border-gray-600/50 gap-8 p-4 py-8 lg:px-16 relative transition-all duration-700 ease-out max-w-full overflow-x-hidden ${ imageVisible  ? 'opacity-100 transform translate-x-0' : 'opacity-0 transform -translate-x-10' }`}
+          >
+            <DragAndDrop 
+              onFileDrop={processImage}
+              disabled={loading}
+              className="flex flex-col items-center justify-center w-full"
+            >
+              {/* Image preview */}
+              <label htmlFor="file-input" className="cursor-pointer transform hover:scale-[1.01] transition-all duration-300 ease-in-out">
+                <div className="relative">
+                  <Image
+                    key={fadeKey}
+                    draggable={false}
+                    src={displayImage ? image : placeholderImg}
+                    alt="Uploaded Image"
+                    width={300}
+                    height={450}
+                    style={{ objectFit: "contain" }}
+                    className={`rounded-2xl border border-indigo-500/30 shadow-lg shadow-indigo-500/20 transition-all duration-500 ease-in-out ${imageTransitioning ? 'opacity-70 scale-[0.98]' : 'opacity-100 scale-100'}`}
+                  />
+                </div>
+              </label>
+              
+              {/* Image upload */}
+              <div className="text-center flex flex-col mt-8">
+                <input
+                  type="file"
+                  accept="image/*"
+                  id="file-input"
+                  className="hidden"
+                  onChange={handleImageUpload}
+                  disabled={loading}
+                />
+
+                <div>
+                  <label
+                    htmlFor="file-input"
+                    className={`inline-block px-6 py-3 rounded-2xl text-white text-base font-semibold bg-[#3B03FF]/80 hover:bg-[#4B13FF] transition-all duration-300 ease-in-out transform ${loading ? 'animate-gradient opacity-50 cursor-default hover:scale-100' : 'cursor-pointer hover:scale-105 shadow-lg hover:shadow-blue-500/20'}`}
+                    >
+                    {loading ? <span> Analyzing Image... </span> : <span> Upload Image </span>}
+                  </label>
+
+                  <div className="text-[0.6rem] lg:text-[0.7rem] mt-2 font-medium text-gray-400"> or drag and drop an image here </div>
+                </div>
+              </div>
+            </DragAndDrop>
+          </div>
+
+          {/* Right half (car info) */}
+          <div 
+            ref={carInfoRef} 
+            className={`flex flex-col flex-1 items-center p-4 py-4 lg:py-8 lg:px-16 relative transition-all duration-700 ease-out max-w-full overflow-x-hidden ${ carInfoVisible ? 'opacity-100 transform translate-x-0' : 'opacity-0 transform translate-x-10' }`} 
+          >
+            <div className={`transition-all duration-500 ease-in-out ${imageTransitioning ? 'opacity-70 scale-[0.98] blur-[1px]' : 'opacity-100 scale-100 blur-0'}`}>
+              <CarInfo make={car.make} model={car.model} year={car.year} rarity={car.rarity} link={car.link} onSaveResults={onSaveResultsClick}/>
+            </div>
+          </div>
+        </div>
+
+        {/* Feature cards */}
+        <div ref={featureCardsRef}>
+          <HomeFeatureCards visible={featureCardsVisible} />
+        </div>
+
+        {/* Footnote */}
+        <div className="flex flex-col text-[0.5rem] lg:text-[0.7rem] text-gray-700 mt-6 text-center max-w-2xl gap-1">
+          <p><sup>†</sup> Predictions may vary based on image quality, lighting conditions, viewing angle, and model rarity. Accuracy was determined with clear, well-lit photos of vehicles from standard viewing angles.</p>
+          <p> <span className="text-[0.6rem] lg:text-[0.8rem]">‡</span> Rarity is AI-generated and may vary. It is a dynamic estimate based on the car's appearance and the data available. </p> 
+        </div>
       </div>
 
-      {/* Feature cards */}
-      <div ref={featureCardsRef}>
-        <HomeFeatureCards visible={featureCardsVisible} />
-      </div>
-
-      {/* Footnote */}
-      <div className="flex flex-col text-[0.5rem] lg:text-[0.7rem] text-gray-700 mt-6 text-center max-w-2xl gap-1">
-        <p><sup>†</sup> Predictions may vary based on image quality, lighting conditions, viewing angle, and model rarity. Accuracy was determined with clear, well-lit photos of vehicles from standard viewing angles.</p>
-        <p> <span className="text-[0.6rem] lg:text-[0.8rem]">‡</span> Rarity is AI-generated and may vary. It is a dynamic estimate based on the car's appearance and the data available. </p> 
-      </div>
-    </div>
+      {/* Auth Modals */}
+      <AuthModals 
+        isLoginOpen={isLoginOpen}
+        isSignupOpen={isSignupOpen}
+        onClose={handleCloseModals}
+        onSwitchToSignup={handleSwitchToSignup}
+        onSwitchToLogin={handleSwitchToLogin}
+      />
+    </>
   );
 };
 

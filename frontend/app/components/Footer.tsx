@@ -1,13 +1,11 @@
 const Footer = () => {
   return (
-    <footer className="relative flex flex-wrap items-center justify-center w-full text-[10px] text-gray-600 p-3 gap-10 border-t border-[0.25px] border-white/10 shadow-xl shadow-white/5">
-      <span>© 2025 WTC.</span>
-      <nav className="flex gap-10">
-        <a href="/terms" className="hover:text-white transition-colors">Terms of Service</a>
-        <a href="/privacy" className="hover:text-white transition-colors">Privacy Policy</a>
-        {/* <a href="/faq" className="hover:text-white transition-colors">FAQ</a> */}
-        <a href="/contact" className="hover:text-white transition-colors">Contact Us</a>
-      </nav>
+    <footer className="flex flex-row items-center justify-center w-full text-[0.5rem] lg:text-[0.7rem] text-gray-700 gap-8 lg:gap-20 p-3 border-t-[0.25px] border-gray-900">
+      <span> © 2025 What's That Car? </span>
+      <a href="/terms-of-service" className="transition-colors duration-300 hover:text-white hover:underline"> Terms of Service </a>
+      <a href="/privacy-policy" className="transition-colors duration-300 hover:text-white hover:underline"> Privacy Policy </a>
+      {/* <a href="/faq" className="hover:text-white transition-colors">FAQ</a> */}
+      <a href="mailto:williamong.dev@gmail.com" className="transition-colors duration-300 hover:text-white hover:underline"> Contact Us </a>
     </footer>
 
     // Vertical stack
@@ -22,6 +20,5 @@ const Footer = () => {
     // </footer>
   );
 };
-
 
 export default Footer;

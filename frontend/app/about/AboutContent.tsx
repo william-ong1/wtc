@@ -53,7 +53,7 @@ const AboutContent = () => {
   
   
   return (
-    <div className="flex flex-col flex-1 items-center w-full lg:w-3/4 h-full py-4 lg:py-8 px-6 lg:px-12 gap-8 fade-in">
+    <div className="flex flex-col flex-1 items-center w-full lg:w-3/4 h-full py-4 lg:py-8 px-6 lg:px-12 gap-12 fade-in">
 
       {/* About Us */}
       <section 
