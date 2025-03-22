@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState, useEffect, useRef, RefObject, Dispatch, SetStateAction } from "react";
+import { useState, useEffect, useRef, useCallback, RefObject, Dispatch, SetStateAction } from "react";
 import axios from "axios";
 import placeholderImg from "@/public/images/placeholder.png";
 import CarInfo from "./CarInfo";
@@ -10,6 +10,7 @@ import HomeFeatureCards from "./HomeFeatureCards";
 import DragAndDrop from "./DragAndDrop";
 import { useAuth } from '../providers/AmplifyProvider';
 import AuthModals from './AuthModals';
+import { getCurrentUser } from 'aws-amplify/auth';
 
 type Car = {
   make: string;
@@ -26,6 +27,7 @@ const HomeContent = () => {
   const [car, setCar] = useState<Car>({make: "n/a", model: "n/a", year: "n/a", rarity: "n/a", link: "n/a"});
   const [loading, setLoading] = useState<boolean>(false);
   const [imageTransitioning, setImageTransitioning] = useState<boolean>(false);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
 
   const [headerVisible, setHeaderVisible] = useState<boolean>(false);
   const [statCardsVisible, setStatCardsVisible] = useState<boolean>(false);
@@ -36,6 +38,9 @@ const HomeContent = () => {
   const [isLoginOpen, setIsLoginOpen] = useState<boolean>(false);
   const [isSignupOpen, setIsSignupOpen] = useState<boolean>(false);
   const { user, refreshAuthState } = useAuth();
+
+  const [shouldSaveAfterLogin, setShouldSaveAfterLogin] = useState<boolean>(false);
+  const [isSaved, setIsSaved] = useState<boolean>(false);
 
   const headerRef = useRef<HTMLDivElement>(null);
   const statCardsRef = useRef<HTMLDivElement>(null);
@@ -119,6 +124,9 @@ const HomeContent = () => {
     setImageTransitioning(true);
 
     try {
+      // Reset saved state for new image
+      setIsSaved(false);
+      
       setImage(objectUrl);
       setDisplayImage(true);
       setFadeKey(fadeKey + 1);
@@ -135,7 +143,7 @@ const HomeContent = () => {
       const { make, model, year, rarity, link } = result.data;
       
       // Update car info with a smooth transition
-      setCar({make: make, model: model, year: year, rarity: rarity, link: link});
+      setCar({make: make, model: model, year: year, rarity: rarity || "n/a", link: link});
       
       // Allow time for the car info to update before ending transition
       setTimeout(() => {
@@ -174,18 +182,103 @@ const HomeContent = () => {
     setIsSignupOpen(false);
     setIsLoginOpen(true);
   };
-
+  
   const onSaveResultsClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
-    // Save results to user's account
+    // Check if user is logged in
     if (user) {
-      console.log('Saving results to user account...');
+      saveCarData();
     } else {
-      console.log('User not authenticated. Redirecting to login...');
+      // If not logged in, display login modal and save afterwards.
+      setShouldSaveAfterLogin(true);
       setIsLoginOpen(true);
     }
   };
 
+  // Save car data to AWS
+  const saveCarData = useCallback(async () => {
+    try {      
+      // Only proceed if we have valid car data
+      if (car.make === "n/a" || !image) {
+        console.error("No valid car data to save");
+        return;
+      }
+      
+      setIsSaving(true);
+      
+      // Get current user ID to associate with saved data
+      const currentUser = await getCurrentUser();
+      const userId = currentUser.userId;
+      
+      // Convert blob URL to data URL if needed
+      let imageUrl = image;
+      if (image.startsWith('blob:')) {
+        try {
+          const response = await fetch(image);
+          const blob = await response.blob();
+          
+          imageUrl = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+        } catch (err) {
+          console.error("Failed to convert blob URL to data URL:", err);
+          alert("Failed to process the image. Please try again.");
+          setIsSaving(false);
+          return;
+        }
+      }
+      
+      // Prepare data to save - exclude rarity
+      const carData = {
+        userId,
+        carInfo: {
+          make: car.make,
+          model: car.model,
+          year: car.year,
+          link: car.link,
+        },
+        imageUrl: imageUrl, // Send the processed image URL
+        savedAt: new Date().toISOString(),
+      };
+      
+      // Call backend API to save to DynamoDB and S3
+      const backendUrl = `http://${window.location.hostname}:8000/save-car/`;
+      const response = await axios.post(backendUrl, carData, {
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (response.status !== 200) {
+        console.error("Failed to save car data");
+        setIsSaving(false);
+        return;
+      }
+
+      // Update saved state
+      setIsSaved(true);
+      setIsSaving(false);
+    } catch (error) {
+      console.error("Error saving car data:", error);
+      alert("Failed to save car data. Please try again.");
+      setIsSaving(false);
+    }
+  }, [car, image]);
+
+  // Reset saved state when a new image is uploaded
+  useEffect(() => {
+    setIsSaved(false);
+  }, [image]);
+
+  // Listen for changes in authentication state
+  useEffect(() => {
+    // If user becomes authenticated and we have a pending save request
+    if (user && shouldSaveAfterLogin) {
+      saveCarData();
+      setShouldSaveAfterLogin(false);
+    }
+  }, [user, shouldSaveAfterLogin, saveCarData]);
 
   return (
     <>
@@ -264,9 +357,10 @@ const HomeContent = () => {
                 <div>
                   <label
                     htmlFor="file-input"
-                    className={`inline-block px-6 py-3 rounded-2xl text-white text-base font-semibold bg-[#3B03FF]/80 hover:bg-[#4B13FF] transition-all duration-300 ease-in-out transform ${loading ? 'animate-gradient opacity-50 cursor-default hover:scale-100' : 'cursor-pointer hover:scale-105 shadow-lg hover:shadow-blue-500/20'}`}
+                    className={`inline-block px-6 py-3 rounded-2xl text-white text-base font-semibold bg-[#3B03FF]/80 hover:bg-[#4B13FF] transition-all duration-300 ease-in-out transform ${loading ? 'cursor-wait animate-gradient opacity-50 cursor-default hover:scale-100' : 'cursor-pointer hover:scale-105 shadow-lg hover:shadow-blue-500/20'}`}
                     >
-                    {loading ? <span> Analyzing Image... </span> : <span> Upload Image </span>}
+                    {loading ? <div className="flex flex-row justify-center items-center gap-2"> Analyzing Image... <div className="animate-spin rounded-full mb-0.5 mr-1 h-4 w-4 border-t-2 border-b-2 border-white ml-1"> </div> </div>
+                    : <span> Upload Image </span>}
                   </label>
 
                   <div className="text-[0.6rem] lg:text-[0.7rem] mt-2 font-medium text-gray-400"> or drag and drop an image here </div>
@@ -281,7 +375,16 @@ const HomeContent = () => {
             className={`flex flex-col flex-1 items-center p-4 py-4 lg:py-8 lg:px-16 relative transition-all duration-700 ease-out max-w-full overflow-x-hidden ${ carInfoVisible ? 'opacity-100 transform translate-x-0' : 'opacity-0 transform translate-x-10' }`} 
           >
             <div className={`transition-all duration-500 ease-in-out ${imageTransitioning ? 'opacity-70 scale-[0.98] blur-[1px]' : 'opacity-100 scale-100 blur-0'}`}>
-              <CarInfo make={car.make} model={car.model} year={car.year} rarity={car.rarity} link={car.link} onSaveResults={onSaveResultsClick}/>
+              <CarInfo 
+                make={car.make} 
+                model={car.model} 
+                year={car.year} 
+                rarity={car.rarity} 
+                link={car.link} 
+                onSaveResults={onSaveResultsClick}
+                isSaved={isSaved}
+                isSaving={isSaving}
+              />
             </div>
           </div>
         </div>

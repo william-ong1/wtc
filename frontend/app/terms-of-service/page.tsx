@@ -1,7 +1,7 @@
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 
-export default function Home() {
+export default function TermsOfService() {
   return (
     <>
       <title> Terms of Service | What's That Car? </title>

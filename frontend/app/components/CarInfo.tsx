@@ -12,9 +12,13 @@ interface CarInfoProps {
   rarity: string;
   link: string;
   onSaveResults: (e: React.MouseEvent<HTMLButtonElement>) => void;
+  isSaved?: boolean;
+  isSaving?: boolean;
 };
 
-const CarInfo: React.FC<CarInfoProps> = ({ make, model, year, rarity, link, onSaveResults }) => {
+const CarInfo: React.FC<CarInfoProps> = ({ 
+  make, model, year, rarity, link, onSaveResults, isSaved = false, isSaving = false 
+}) => {
   const [imageExists, setImageExists] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [animateContent, setAnimateContent] = useState(false);
@@ -86,6 +90,13 @@ const CarInfo: React.FC<CarInfoProps> = ({ make, model, year, rarity, link, onSa
     return 'Common';
   };
 
+  // SVG for checkmark icon
+  const CheckmarkSVG = () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M9 16.17L4.83 12L3.41 13.41L9 19L21 7L19.59 5.59L9 16.17Z" fill="white"/>
+    </svg>
+  );
+
   return (
     <div 
       id="info" 
@@ -153,14 +164,30 @@ const CarInfo: React.FC<CarInfoProps> = ({ make, model, year, rarity, link, onSa
             View More Details
           </a>
 
-          <button onClick={onSaveResults} className="inline-flex text-base items-center gap-2 px-6 py-3 rounded-xl font-semibold bg-[#3B03FF]/80 transition-transform duration-300 ease-in-out transform hover:scale-105">
-            Save Results
-            <Image
-              src={cloudSave}
-              alt="Save icon"
-              width={16}
-              height={16}
-            />
+          <button 
+            onClick={onSaveResults} 
+            disabled={isSaved || isSaving}
+            className={`inline-flex text-base items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-300 ease-in-out transform 
+              ${isSaved 
+                ? 'bg-[#16A34A]/80 cursor-default' 
+                : isSaving 
+                  ? 'bg-[#3B03FF]/60 cursor-wait'
+                  : 'bg-[#3B03FF]/80 hover:scale-105'
+              }`}
+          >
+            {isSaved 
+              ? 'Saved' 
+              : isSaving 
+                ? 'Saving...' 
+                : 'Save Results'
+            }
+            
+            {isSaved 
+              ? <CheckmarkSVG /> 
+              : isSaving
+                ? <div className="animate-spin rounded-full mb-0.5 mr-1 h-4 w-4 border-t-2 border-b-2 border-white ml-1"></div>
+                : <Image src={cloudSave} alt="Save icon" width={16} height={16} />
+            }
           </button>
         </div>
       )}

@@ -1,7 +1,7 @@
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 
-export default function Home() {
+export default function PrivacyPolicy() {
   return (
     <>
       <title> Privacy Policy | What's That Car? </title>

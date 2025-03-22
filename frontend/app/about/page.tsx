@@ -2,7 +2,7 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import AboutContent from "./AboutContent";
 
-export default function Home() {
+export default function About() {
   return (
     <>
       <title> About | What's That Car? </title>
