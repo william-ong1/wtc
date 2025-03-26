@@ -27,6 +27,7 @@ const HomeContent = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [imageTransitioning, setImageTransitioning] = useState<boolean>(false);
   const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [isConverting, setIsConverting] = useState<boolean>(false);
 
   const [headerVisible, setHeaderVisible] = useState<boolean>(false);
   const [statCardsVisible, setStatCardsVisible] = useState<boolean>(false);
@@ -125,9 +126,32 @@ const HomeContent = () => {
       return;
     }
 
-    const objectUrl = URL.createObjectURL(file);
+    let processedFile = file;
+    
+    // Convert HEIC to JPEG if needed
+    if (file.type.includes('heic')) {
+      setIsConverting(true);
+      try {
+        const heic2any = (await import('heic2any')).default;
+        const blob = await heic2any({
+          blob: file,
+          toType: "image/jpeg",
+          quality: 1.0
+        });
+        const singleBlob = Array.isArray(blob) ? blob[0] : blob;
+        processedFile = new File([singleBlob], file.name.replace('.heic', '.jpg'), { type: 'image/jpeg' });
+      } catch (error) {
+        console.error('Error converting HEIC:', error);
+        setIsConverting(false);
+        return;
+      } finally {
+        setIsConverting(false);
+      }
+    }
+
+    const objectUrl = URL.createObjectURL(processedFile);
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("file", processedFile);
 
     setLoading(true);
     setImageTransitioning(true);
@@ -364,6 +388,21 @@ const HomeContent = () => {
     e.stopPropagation();
     if (loading) return;
     
+    // Check if we're dropping in the drop zone
+    const dropZone = document.getElementById('drop-zone');
+    if (!dropZone) return;
+    
+    const rect = dropZone.getBoundingClientRect();
+    if (
+      e.clientX < rect.left ||
+      e.clientX > rect.right ||
+      e.clientY < rect.top ||
+      e.clientY > rect.bottom
+    ) {
+      setIsDragging(false);
+      return;
+    }
+    
     setIsDragging(false);
 
     const file = e.dataTransfer.files[0];
@@ -418,7 +457,7 @@ const HomeContent = () => {
             className={`flex flex-col flex-1 items-center justify-center relative md:border-r-[0.25px] border-gray-600/50 gap-8 p-4 py-8 lg:px-16 relative transition-all duration-700 ease-out max-w-full overflow-x-hidden ${ imageVisible  ? 'opacity-100 transform translate-x-0' : 'opacity-0 transform -translate-x-10' }`}
           >
             {/* Image preview */}
-            <label htmlFor="file-input" className="cursor-pointer transform hover:scale-[1.01] transition-all duration-300 ease-in-out">
+            <label htmlFor="file-input" className="pt-2 lg:pt-0 cursor-pointer transform hover:scale-[1.01] transition-all duration-300 ease-in-out">
               <div className="relative">
                 <Image
                   key={fadeKey}
@@ -434,7 +473,7 @@ const HomeContent = () => {
             </label>
             
             {/* Image upload */}
-            <div className="text-center flex flex-col mt-8">
+            <div className="text-center flex flex-col">
               <input
                 type="file"
                 accept="image/*"
@@ -446,16 +485,20 @@ const HomeContent = () => {
 
               <div>
                 {isDragging ? (
-                  <div className="bg-[#101827] backdrop-blur-md rounded-2xl p-8 border-2 border-dashed border-white/50 text-white text-lg">
+                  <div 
+                    id="drop-zone"
+                    className="bg-gray-800/90 backdrop-blur-md rounded-2xl p-8 px-14 border-2 border-dashed border-white/50 text-white text-base text-nowrap"
+                  >
                     Drop your image here
                   </div>
                 ) : (
                   <>
                     <label
                       htmlFor="file-input"
-                      className={`inline-block px-6 py-3 rounded-2xl text-white text-base font-semibold bg-primary-blue hover:bg-primary-blue-hover transition-all duration-300 ease-in-out transform ${loading ? 'cursor-wait opacity-50 cursor-default hover:scale-100' : 'cursor-pointer hover:scale-105 shadow-lg hover:shadow-blue-500/20'}`}
+                      className={`inline-block px-6 py-3 rounded-2xl text-white text-base font-semibold bg-primary-blue hover:bg-primary-blue-hover transition-all duration-300 ease-in-out transform ${loading || isConverting ? 'cursor-wait opacity-50 cursor-default hover:scale-100' : 'cursor-pointer hover:scale-105 shadow-lg hover:shadow-blue-500/20'}`}
                     >
                       {loading ? <div className="flex flex-row justify-center items-center gap-2"> Analyzing Image <div className="animate-spin rounded-full mb-0.5 mr-1 h-4 w-4 border-t-2 border-b-2 border-white ml-1"> </div> </div>
+                      : isConverting ? <div className="flex flex-row justify-center items-center gap-2"> Uploading Image <div className="animate-spin rounded-full mb-0.5 mr-1 h-4 w-4 border-t-2 border-b-2 border-white ml-1"> </div> </div>
                       : <span> Upload Image </span>}
                     </label>
 

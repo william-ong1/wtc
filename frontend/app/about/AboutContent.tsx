@@ -52,7 +52,7 @@ const AboutContent = () => {
 
   return (
     
-    <div className="flex flex-col flex-1 w-full max-w-5xl px-6 py-4 mb-8 lg:py-12 gap-8 md:gap-12 overflow-visible pb-8 fade-in">
+    <div className="flex flex-col flex-1 w-full max-w-5xl px-6 py-4 mb-8 lg:py-8 gap-8 md:gap-12 overflow-visible pb-8 fade-in">
       {/* About Us */}
       <section 
         className={`flex flex-col text-left text-sm lg:text-base w-full max-w-5xl gap-2 lg:gap-4 transition-all duration-700 ease-out ${aboutSectionVisible ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform'}`}>

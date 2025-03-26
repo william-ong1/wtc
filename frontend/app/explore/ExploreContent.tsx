@@ -7,6 +7,9 @@ import axios from "axios";
 import { useAuth } from '@/app/providers/AmplifyProvider';
 import AuthModals from '@/app/components/AuthModals';
 
+// Define SortOption type
+type SortOption = 'newest' | 'oldest' | 'mostLiked';
+
 // Define car type
 type Car = {
   userId: string;
@@ -23,22 +26,21 @@ type Car = {
   username: string;
   profilePicture: string;
   description?: string;
+  
 };
-
-// Define sort options
-type SortOption = 'newest' | 'oldest' | 'mostLiked';
-
 type CarCardProps = {
   car: Car;
   onLike: (userId: string, savedAt: string) => void;
   onUnlike: (userId: string, savedAt: string) => void;
   hasLiked?: boolean;
+  currentUsernames: Record<string, string>;
 };
 
-const CarCard: FC<CarCardProps> = ({ car, onLike, onUnlike, hasLiked = false }: CarCardProps) => {
+const CarCard: FC<CarCardProps> = ({ car, onLike, onUnlike, hasLiked = false, currentUsernames }: CarCardProps) => {
   const make = car.carInfo.make;
   const model = car.carInfo.model;
   const year = car.carInfo.year;
+  const currentUsername = currentUsernames[car.userId] || car.username;
 
   const [imageError, setImageError] = useState<boolean>(false);
   const [isLiking, setIsLiking] = useState<boolean>(false);
@@ -75,19 +77,19 @@ const CarCard: FC<CarCardProps> = ({ car, onLike, onUnlike, hasLiked = false }: 
           {car.profilePicture ? (
             <Image
               src={car.profilePicture}
-              alt={car.username}
+              alt={currentUsername}
               fill
               sizes="32px"
               style={{ objectFit: "cover" }}
             />
           ) : (
             <div className="w-full h-full bg-indigo-500 flex items-center justify-center text-xs text-white font-bold">
-              {car.username.charAt(0).toUpperCase()}
+              {currentUsername.charAt(0).toUpperCase()}
             </div>
           )}
         </div>
         <div className="flex flex-col text-left">
-          <span className="text-sm font-medium text-white">{car.username || 'Unknown User'}</span>
+          <span className="text-sm font-medium text-white">{currentUsername || 'Unknown User'}</span>
           <p className="text-xs text-gray-500"> Posted on {savedDate} </p>
         </div>
 
@@ -155,7 +157,7 @@ const CarCard: FC<CarCardProps> = ({ car, onLike, onUnlike, hasLiked = false }: 
       <div className="p-4">
         {/* Car info */}
         <div className="flex justify-between items-center">
-          <h3 className="text-lg font-bold text-custom-blue"> {model} </h3>
+          <h3 className="text-lg font-bold text-left text-custom-blue"> {model} </h3>
         </div>
 
         <div className="flex items-center gap-2">
@@ -198,11 +200,28 @@ const ExploreContent = () => {
   const [isSignupOpen, setIsSignupOpen] = useState<boolean>(false);
   const [sortOption, setSortOption] = useState<SortOption>('newest');
   const [dropdownOpen, setDropdownOpen] = useState<boolean>(false);
+  const [currentUsernames, setCurrentUsernames] = useState<Record<string, string>>({});
   const dropdownRef = useRef<HTMLDivElement>(null);
   const auth = useAuth();
   const user = auth.user;
   const refreshAuthState = auth.refreshAuthState;
 
+  // Function to fetch current usernames
+  const fetchCurrentUsernames = async (userIds: string[]): Promise<void> => {
+    try {
+      const hostname = window.location.hostname;
+      const backendUrl = `http://${hostname}:8000/get-current-usernames`;
+      const response = await axios.post(backendUrl, userIds);
+      
+      if (response.data.success) {
+        setCurrentUsernames(response.data.usernames);
+      } else {
+        console.error("Failed to fetch current usernames:", response.data.error);
+      }
+    } catch (error) {
+      console.error("Error fetching current usernames:", error);
+    }
+  };
 
   // Handle click outside to close dropdown
   useEffect(() => {
@@ -227,6 +246,10 @@ const ExploreContent = () => {
       
       if (response.data.success) {
         setCars(response.data.cars);
+        // Fetch current usernames for all cars
+        const userIds = response.data.cars.map((car: Car) => car.userId);
+        console.log(userIds);
+        await fetchCurrentUsernames(userIds);
       } else {
         console.error("Failed to fetch cars:", response.data.error);
       }
@@ -331,7 +354,7 @@ const ExploreContent = () => {
   return (
     <>
       <title> Explore | What's That Car? </title>
-      <div className="flex flex-col flex-1 w-full max-w-5xl px-6 py-4 mb-8 lg:py-12 fade-in">
+      <div className="flex flex-col flex-1 w-full max-w-5xl px-6 py-4 mb-8 lg:py-8 fade-in">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
           <h1 className="text-2xl font-bold text-custom-blue mb-3 md:mb-0 text-left"> Explore Cars </h1>
           
@@ -400,6 +423,7 @@ const ExploreContent = () => {
                   onLike={likeCar}
                   onUnlike={unlikeCar}
                   hasLiked={user ? (car.likedBy || []).includes(user.userId) : false}
+                  currentUsernames={currentUsernames}
                 />
                 {/* Add divider only on small screens and not for the last item */}
                 {index < sortedCars.length - 1 && (

@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useAuth } from '@/app/providers/AmplifyProvider';
 import AuthModals from '@/app/components/AuthModals';
 import { fetchUserAttributes, updateUserAttributes } from 'aws-amplify/auth';
+import axios from 'axios';
 
 interface UserProfile {
   username: string;
@@ -111,7 +112,7 @@ const ProfileEditContent = () => {
         pictureUrl = previewUrl; // Using the data URL as a placeholder for demo purposes
       }
       
-      // Update user attributes
+      // Update user attributes in Cognito
       await updateUserAttributes({
         userAttributes: {
           preferred_username: profile.username,
@@ -120,6 +121,16 @@ const ProfileEditContent = () => {
           ...(pictureUrl ? { picture: pictureUrl } : {})
         }
       });
+
+      // Update username in our database if it has changed
+      if (user && profile.username !== user.username) {
+        const hostname = window.location.hostname;
+        const backendUrl = `http://${hostname}:8000/update-username`;
+        await axios.post(backendUrl, {
+          user_id: user.userId,
+          new_username: profile.username
+        });
+      }
       
       setSuccessMessage('Profile updated successfully!');
       
@@ -163,10 +174,10 @@ const ProfileEditContent = () => {
         <title> Edit Profile | What's That Car? </title>
         <div className="flex flex-col flex-1 items-center justify-center w-full h-full p-4 gap-8 fade-in">
           <div className="text-center max-w-md">
-            <h2 className="text-2xl font-bold mb-4 animate-gradient-text pt-8 pb-4">Sign In to Edit Your Profile</h2>
+            <h2 className="text-2xl font-bold mb-4 text-custom-blue pt-8 pb-4">Sign In to Edit Your Profile</h2>
             <button 
               onClick={() => setIsLoginOpen(true)}
-              className="px-6 py-3 rounded-2xl text-white text-base font-semibold bg-[#3B03FF]/80 hover:bg-[#4B13FF] transition-all duration-300 ease-in-out transform hover:scale-105 shadow-lg hover:shadow-blue-500/20"
+              className="px-6 py-3 rounded-2xl text-white text-base font-semibold bg-primary-blue hover:bg-primary-blue-hover transition-all duration-300 ease-in-out transform hover:scale-105 shadow-lg hover:shadow-blue-500/20"
             >
               Sign In
             </button>

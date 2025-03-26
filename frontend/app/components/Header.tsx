@@ -191,12 +191,12 @@ const Header = () => {
                   alt="Logo" 
                   width={100}
                   height={100}
-                  className="relative w-8 h-8 cursor-pointer p-0.5 transition-all duration-300 ease-in-out transform hover:scale-105"
+                  className="relative w-8 h-8 cursor-pointer p-0.5 mb-1 transition-all duration-300 ease-in-out transform hover:scale-105"
                 />
 
               </Link>
             </div>
-            <div className="hidden lg:flex items-center mt-1">
+            <div className="hidden lg:flex items-center mt-0.25">
               What's That Car?
             </div>
           </div>

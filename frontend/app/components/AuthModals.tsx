@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { signIn, signUp, confirmSignUp, resetPassword, confirmResetPassword } from 'aws-amplify/auth';
+import axios from 'axios';
 
 interface AuthModalsProps {
   isLoginOpen: boolean;
@@ -99,16 +100,26 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
     setIsProcessing(true);
     
     try {
-      await signUp({
+      const { userId } = await signUp({
         username,
         password,
         options: {
           userAttributes: {
-            email
+            email,
+            preferred_username: username
           },
           autoSignIn: true
         }
       });
+
+      // Create user entry in our database
+      const hostname = window.location.hostname;
+      const backendUrl = `http://${hostname}:8000/create-user`;
+      await axios.post(backendUrl, {
+        user_id: userId,
+        username: username
+      });
+
       setShowConfirmation(true);
       setSuccessMessage('Please check your email for a confirmation code.');
     } catch (error: any) {
@@ -234,6 +245,7 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
   return (
     <div 
       className={`fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-300 ease-in-out ${isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+      onClick={handleCloseWithAnimation}
     >
       <div 
         className={`bg-gray-950 rounded-3xl p-6 w-full max-w-xs shadow-md shadow-blue-300/20 border border-gray-900 relative transition-all duration-300 ease-in-out
@@ -475,7 +487,7 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
                   type="text"
                   value={confirmationCode}
                   onChange={(e) => setConfirmationCode(e.target.value)}
-                  className="w-full px-3 py-2 bg-[#1a1245] border border-blue-300/10 rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-blue-500/30 text-sm"
+                  className="w-full px-3 py-2 bg-gray-900/90 border border-blue-300/10 rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-blue-500/30 text-sm"
                   required
                   disabled={isProcessing}
                   placeholder="Enter the code from your email"
@@ -490,7 +502,7 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
                   type="password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full px-3 py-2 bg-[#1a1245] border border-blue-300/10 rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-blue-500/30 text-sm"
+                  className="w-full px-3 py-2 bg-gray-900/90 border border-blue-300/10 rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-blue-500/30 text-sm"
                   required
                   disabled={isProcessing}
                   placeholder="Enter your new password"
@@ -521,20 +533,6 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
         {showConfirmation && (
           <form onSubmit={handleConfirmSignup} className="space-y-4 fade-in">
             <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-300 mb-1 text-left">
-                Username
-              </label>
-              <input
-                id="username"
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-3 py-2 bg-[#1a1245] border border-blue-300/10 rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-blue-500/30 text-sm"
-                required
-                disabled={isProcessing}
-              />
-            </div>
-            <div>
               <label htmlFor="code" className="block text-sm font-medium text-gray-300 mb-1 text-left">
                 Confirmation Code
               </label>
@@ -543,14 +541,11 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
                 type="text"
                 value={confirmationCode}
                 onChange={(e) => setConfirmationCode(e.target.value)}
-                className="w-full px-3 py-2 bg-[#1a1245] border border-blue-300/10 rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-blue-500/30 text-sm"
+                className="w-full px-3 py-2 bg-gray-900/90 border border-blue-300/10 rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-blue-500/30 text-sm"
                 required
                 disabled={isProcessing}
                 placeholder="Enter the code from your email"
               />
-              <p className="text-sm text-gray-400 mt-1">
-                Please check your email for the confirmation code.
-              </p>
             </div>
             <button
               type="submit"

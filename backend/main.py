@@ -36,6 +36,15 @@ dynamodb = boto3.resource(
 )
 cars_table = dynamodb.Table(os.getenv('DYNAMODB_TABLE_NAME'))
 likes_table = dynamodb.Table(os.getenv('DYNAMODB_LIKES_TABLE_NAME'))
+users_table = dynamodb.Table(os.getenv('DYNAMODB_USERS_TABLE_NAME'))
+
+# Cognito setup
+cognito_client = boto3.client(
+    'cognito-idp',
+    region_name=aws_region,
+    aws_access_key_id=aws_access_key,
+    aws_secret_access_key=aws_secret_key
+)
 
 # S3 setup
 s3_client = boto3.client(
@@ -73,6 +82,13 @@ class CarData(BaseModel):
     isPrivate: Optional[bool] = False
     description: Optional[str] = None
 
+class UserCreate(BaseModel):
+    user_id: str
+    username: str
+
+class UsernameUpdate(BaseModel):
+    user_id: str
+    new_username: str
 
 # Generate image hash for S3 filenames
 def generate_image_hash(image_data):
@@ -139,8 +155,8 @@ async def predict(file: UploadFile = File(...)):
     # Prepare prompt for Gemini
     prompt = """Please analyze this car image and provide the following details in a structured format:
 	- Make (Manufacturer)
-	- Model
-	- Exact Year (if possible; if the exact year cannot be determined, provide the year range)
+	- Model (Do not include any information that isn't needed, just the model name, number, and trim if possible (only if you are confident in the trim))
+	- Exact Year (Be exact if possible; if the exact year cannot be determined, provide the possible year range)
     - Rarity (from 1-100)
     - Link (Wikipedia link for the car)
 
@@ -315,6 +331,12 @@ async def get_all_cars():
             # Skip private cars
             if item.get('isPrivate', False):
                 continue
+            
+            # Get current username from users table
+            user_response = users_table.get_item(
+                Key={'userId': item.get('userId')}
+            )
+            current_username = user_response.get('Item', {}).get('username', item.get('username', 'Anonymous'))
                 
             car_data = {
                 'userId': item.get('userId'),
@@ -327,8 +349,8 @@ async def get_all_cars():
                 },
                 'imageUrl': item.get('imageUrl'),
                 'likes': item.get('likes', 0),
-                'likedBy': item.get('likedBy', []),  # Include the list of users who liked the post
-                'username': item.get('username', 'Anonymous'),
+                'likedBy': item.get('likedBy', []),
+                'username': current_username,
                 'profilePicture': item.get('profilePicture', '')
             }
             
@@ -499,4 +521,64 @@ async def unlike_car(car_owner_id: str, saved_at: str, liker_id: str):
         return {"success": True, "likes": updated_likes}
     except Exception as e:
         print(f"Error unliking car: {str(e)}")
+        return {"success": False, "error": str(e)}
+
+
+@app.post("/get-current-usernames")
+async def get_current_usernames(user_ids: list[str]):
+    """Get current usernames for a list of user IDs from the users table"""
+    try:
+        # Get current usernames from users table
+        usernames = {}
+        for user_id in user_ids:
+            try:
+                response = users_table.get_item(
+                    Key={'userId': user_id}
+                )
+                # Get the username from the user item
+                if 'Item' in response:
+                    usernames[user_id] = response['Item'].get('username', None)
+                else:
+                    usernames[user_id] = None
+            except Exception as e:
+                print(f"Error getting username for user {user_id}: {str(e)}")
+                usernames[user_id] = None
+        
+        print(usernames)
+        return {"success": True, "usernames": usernames}
+    except Exception as e:
+        print(f"Error getting current usernames: {str(e)}")
+        return {"success": False, "error": str(e)}
+
+
+@app.post("/create-user")
+async def create_user(user_data: UserCreate):
+    """Create a new user entry in the users table"""
+    try:
+        users_table.put_item(
+            Item={
+                'userId': user_data.user_id,
+                'username': user_data.username,
+            }
+        )
+        return {"success": True}
+    except Exception as e:
+        print(f"Error creating user: {str(e)}")
+        return {"success": False, "error": str(e)}
+
+
+@app.post("/update-username")
+async def update_username(update_data: UsernameUpdate):
+    """Update a user's username in the users table"""
+    try:
+        users_table.update_item(
+            Key={'userId': update_data.user_id},
+            UpdateExpression='SET username = :username',
+            ExpressionAttributeValues={
+                ':username': update_data.new_username,
+            }
+        )
+        return {"success": True}
+    except Exception as e:
+        print(f"Error updating username: {str(e)}")
         return {"success": False, "error": str(e)}

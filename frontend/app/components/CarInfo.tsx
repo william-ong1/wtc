@@ -17,7 +17,7 @@ interface CarInfoProps {
 };
 
 const CarInfo: React.FC<CarInfoProps> = ({ 
-  make, model, year, rarity, link, onSaveResults, isSaved = false, isSaving = false 
+  make, model, year, rarity, link, onSaveResults, isSaved = false, isSaving = false
 }) => {
   const [imageExists, setImageExists] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -141,7 +141,7 @@ const CarInfo: React.FC<CarInfoProps> = ({
 
         <div className={`flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-all duration-300 ease-in-out ${animateContent ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`} style={{ transitionDelay: '100ms' }}>
           <span className="font-medium text-gray-300"> Model </span>
-          <span className="text-white"> {model !== "n/a" ? model : "-"} </span>
+          <span className="text-white text-right"> {model !== "n/a" ? model : "-"} </span>
         </div>
         
         <div className={`flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-all duration-300 ease-in-out ${animateContent ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`} style={{ transitionDelay: '150ms' }}>
