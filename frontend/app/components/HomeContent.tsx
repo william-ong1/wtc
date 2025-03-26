@@ -1,12 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import { useState, useEffect, useRef, useCallback, RefObject, Dispatch, SetStateAction } from "react";
+import { useState, useEffect, useRef, useCallback, RefObject, Dispatch, SetStateAction, ReactNode } from "react";
 import axios from "axios";
 import placeholderImg from "@/public/images/placeholder.png";
 import CarInfo from "./CarInfo";
 import { StatCard } from "./Cards";
-import DragAndDrop from "./DragAndDrop";
 import { useAuth } from '../providers/AmplifyProvider';
 import AuthModals from './AuthModals';
 import DescriptionModal from './SaveSettingsModal';
@@ -50,6 +49,8 @@ const HomeContent = () => {
   const imageRef = useRef<HTMLDivElement>(null);
   const carInfoRef = useRef<HTMLDivElement>(null);
   const featureCardsRef = useRef<HTMLDivElement>(null);
+  
+  const [isDragging, setIsDragging] = useState<boolean>(false);
   
   // Reusable function to scroll to an element with header adjustment
   const scrollToElementWithHeaderAdjustment = (elementRef: RefObject<HTMLElement | null>, delay: number = 0) => {
@@ -119,6 +120,11 @@ const HomeContent = () => {
 
   // Process the uploaded image and update the car details
   const processImage = async (file: File) => {
+    // Verify file is an image
+    if (!file.type.startsWith('image/')) {
+      return;
+    }
+
     const objectUrl = URL.createObjectURL(file);
     const formData = new FormData();
     formData.append("file", file);
@@ -317,9 +323,64 @@ const HomeContent = () => {
     setCarDescription(description);
   };
 
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (loading) return;
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (loading) return;
+    
+    // Check if we're leaving the window
+    if (e.clientX <= 0 || e.clientX >= window.innerWidth || 
+        e.clientY <= 0 || e.clientY >= window.innerHeight) {
+      setIsDragging(false);
+      return;
+    }
+    
+    // Check if we're leaving the drop target
+    const rect = e.currentTarget.getBoundingClientRect();
+    if (
+      e.clientX < rect.left ||
+      e.clientX > rect.right ||
+      e.clientY < rect.top ||
+      e.clientY > rect.bottom
+    ) {
+      setIsDragging(false);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (loading) return;
+    
+    setIsDragging(false);
+
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+    
+    processImage(file);
+  };
+
   return (
     <>
-      <div className="flex flex-col flex-1 items-center w-full lg:w-3/4 h-full py-4 lg:py-8 px-6 lg:px-12 lg:gap-8 fade-in overflow-x-hidden max-w-full">
+      <div
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+        className="flex flex-col flex-1 items-center w-full lg:w-3/4 h-full py-4 lg:py-8 px-6 lg:px-12 lg:gap-8 fade-in overflow-x-hidden max-w-full"
+      >
         {/* Title + description */}
         <div ref={headerRef} className={`flex flex-col items-center text-center w-full lg:w-3/4 gap-2 lg:gap-4 transition-all duration-700 ease-out ${ headerVisible  ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-10' }`}>
           <h1 className="text-2xl font-bold text-custom-blue">
@@ -356,51 +417,53 @@ const HomeContent = () => {
             ref={imageRef} 
             className={`flex flex-col flex-1 items-center justify-center relative md:border-r-[0.25px] border-gray-600/50 gap-8 p-4 py-8 lg:px-16 relative transition-all duration-700 ease-out max-w-full overflow-x-hidden ${ imageVisible  ? 'opacity-100 transform translate-x-0' : 'opacity-0 transform -translate-x-10' }`}
           >
-            <DragAndDrop 
-              onFileDrop={processImage}
-              disabled={loading}
-              className="flex flex-col items-center justify-center w-full"
-            >
-              {/* Image preview */}
-              <label htmlFor="file-input" className="cursor-pointer transform hover:scale-[1.01] transition-all duration-300 ease-in-out">
-                <div className="relative">
-                  <Image
-                    key={fadeKey}
-                    draggable={false}
-                    src={displayImage ? image : placeholderImg}
-                    alt="Uploaded Image"
-                    width={300}
-                    height={450}
-                    style={{ objectFit: "contain" }}
-                    className={`rounded-2xl border border-gray-900 bg-gray-950/80 shadow-md shadow-blue-300/10 transition-all duration-500 ease-in-out ${imageTransitioning ? 'opacity-70 scale-[0.98]' : 'opacity-100 scale-100'}`}
-                  />
-                </div>
-              </label>
-              
-              {/* Image upload */}
-              <div className="text-center flex flex-col mt-8">
-                <input
-                  type="file"
-                  accept="image/*"
-                  id="file-input"
-                  className="hidden"
-                  onChange={handleImageUpload}
-                  disabled={loading}
+            {/* Image preview */}
+            <label htmlFor="file-input" className="cursor-pointer transform hover:scale-[1.01] transition-all duration-300 ease-in-out">
+              <div className="relative">
+                <Image
+                  key={fadeKey}
+                  draggable={false}
+                  src={displayImage ? image : placeholderImg}
+                  alt="Uploaded Image"
+                  width={300}
+                  height={450}
+                  style={{ objectFit: "contain" }}
+                  className={`rounded-2xl border border-gray-900 bg-gray-950/80 shadow-md shadow-blue-300/10 transition-all duration-500 ease-in-out ${imageTransitioning ? 'opacity-70 scale-[0.98]' : 'opacity-100 scale-100'}`}
                 />
-
-                <div>
-                  <label
-                    htmlFor="file-input"
-                    className={`inline-block px-6 py-3 rounded-2xl text-white text-base font-semibold bg-primary-blue hover:bg-primary-blue-hover transition-all duration-300 ease-in-out transform ${loading ? 'cursor-wait opacity-50 cursor-default hover:scale-100' : 'cursor-pointer hover:scale-105 shadow-lg hover:shadow-blue-500/20'}`}
-                    >
-                    {loading ? <div className="flex flex-row justify-center items-center gap-2"> Analyzing Image... <div className="animate-spin rounded-full mb-0.5 mr-1 h-4 w-4 border-t-2 border-b-2 border-white ml-1"> </div> </div>
-                    : <span> Upload Image </span>}
-                  </label>
-
-                  <div className="text-[0.6rem] lg:text-[0.7rem] mt-2 font-medium text-gray-400"> or drag and drop an image here </div>
-                </div>
               </div>
-            </DragAndDrop>
+            </label>
+            
+            {/* Image upload */}
+            <div className="text-center flex flex-col mt-8">
+              <input
+                type="file"
+                accept="image/*"
+                id="file-input"
+                className="hidden"
+                onChange={handleImageUpload}
+                disabled={loading}
+              />
+
+              <div>
+                {isDragging ? (
+                  <div className="bg-[#101827] backdrop-blur-md rounded-2xl p-8 border-2 border-dashed border-white/50 text-white text-lg">
+                    Drop your image here
+                  </div>
+                ) : (
+                  <>
+                    <label
+                      htmlFor="file-input"
+                      className={`inline-block px-6 py-3 rounded-2xl text-white text-base font-semibold bg-primary-blue hover:bg-primary-blue-hover transition-all duration-300 ease-in-out transform ${loading ? 'cursor-wait opacity-50 cursor-default hover:scale-100' : 'cursor-pointer hover:scale-105 shadow-lg hover:shadow-blue-500/20'}`}
+                    >
+                      {loading ? <div className="flex flex-row justify-center items-center gap-2"> Analyzing Image <div className="animate-spin rounded-full mb-0.5 mr-1 h-4 w-4 border-t-2 border-b-2 border-white ml-1"> </div> </div>
+                      : <span> Upload Image </span>}
+                    </label>
+
+                    <div className="text-[0.6rem] lg:text-[0.7rem] mt-2 font-medium text-gray-400"> or drag and drop an image here </div>
+                  </>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Right half (car info) */}

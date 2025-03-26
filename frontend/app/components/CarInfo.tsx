@@ -184,7 +184,7 @@ const CarInfo: React.FC<CarInfoProps> = ({
             {isSaved 
               ? 'Saved' 
               : isSaving 
-                ? 'Saving...' 
+                ? 'Saving' 
                 : 'Save Results'
             }
             

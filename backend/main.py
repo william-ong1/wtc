@@ -286,6 +286,7 @@ async def get_user_cars(user_id: str):
                     'link': item.get('link'),
                 },
                 'imageUrl': item.get('imageUrl'),
+                'likes': item.get('likes', 0),
                 'isPrivate': item.get('isPrivate', False)
             }
             

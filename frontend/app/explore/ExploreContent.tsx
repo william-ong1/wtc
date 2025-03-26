@@ -44,6 +44,7 @@ const CarCard: FC<CarCardProps> = ({ car, onLike, onUnlike, hasLiked = false }: 
   const [isLiking, setIsLiking] = useState<boolean>(false);
   const [imageLoading, setImageLoading] = useState<boolean>(true);
   const [isPortraitImage, setIsPortraitImage] = useState<boolean>(false);
+  const [showDescription, setShowDescription] = useState<boolean>(false);
   const savedDate = new Date(car.savedAt).toLocaleDateString('en-US', {  year: 'numeric',  month: 'short',  day: 'numeric' });
 
   const handleLikeClick = (): void => {
@@ -153,10 +154,38 @@ const CarCard: FC<CarCardProps> = ({ car, onLike, onUnlike, hasLiked = false }: 
 
       <div className="p-4">
         {/* Car info */}
-        <div className="flex flex-col text-left">
-          <h3 className="text-lg font-bold text-white"> {model} </h3>
-          <p className="text-sm text-gray-400"> {make} · {year} </p>
+        <div className="flex justify-between items-center">
+          <h3 className="text-lg font-bold text-custom-blue"> {model} </h3>
         </div>
+
+        <div className="flex items-center gap-2">
+          <p className="text-sm text-gray-400"> {make} · {year} </p>
+          <div className="flex-1"></div>
+          {car.description && (
+            <button
+              onClick={() => setShowDescription(!showDescription)}
+              className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors duration-200"
+              aria-label={showDescription ? "Hide description" : "Show description"}
+            >
+              {showDescription ? "Hide description" : "View description"}
+            </button>
+          )}
+        </div>
+        
+        {/* Description */}
+        {car.description && (
+          <div className={`relative overflow-hidden transition-all duration-300 ease-in-out ${
+            showDescription 
+              ? 'max-h-[500px] opacity-100' 
+              : 'max-h-0 opacity-0'
+          }`}>
+            <div className={`p-3 bg-gray-800/50 mt-2 rounded-lg border border-gray-700/50 transition-all duration-300 ease-in-out ${
+              showDescription ? 'opacity-100' : 'opacity-0'
+            }`}>
+              <p className="text-sm text-left text-gray-300">{car.description}</p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
