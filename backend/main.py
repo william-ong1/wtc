@@ -35,6 +35,7 @@ dynamodb = boto3.resource(
     aws_secret_access_key=aws_secret_key
 )
 cars_table = dynamodb.Table(os.getenv('DYNAMODB_TABLE_NAME'))
+likes_table = dynamodb.Table(os.getenv('DYNAMODB_LIKES_TABLE_NAME'))
 
 # S3 setup
 s3_client = boto3.client(
@@ -50,7 +51,7 @@ app = FastAPI()
 # Enable CORS - TODO: change before deploy
 app.add_middleware(
 	CORSMiddleware,
-	allow_origins=["http://localhost:3000", "http://192.168.0.24:3000"],
+	allow_origins=["http://localhost:3000", "http://192.168.0.24:3000", "http://192.168.0.69:3000"],
 	allow_credentials=True,
 	allow_methods=["*"],
 	allow_headers=["*"],
@@ -67,7 +68,10 @@ class CarData(BaseModel):
     userId: str
     carInfo: CarInfo
     imageUrl: str
+    username: str
     savedAt: Optional[str] = None
+    isPrivate: Optional[bool] = False
+    description: Optional[str] = None
 
 
 # Generate image hash for S3 filenames
@@ -106,11 +110,9 @@ def preprocess_image(image: UploadFile) -> tuple:
 # Function to upload image to S3
 async def upload_to_s3(image_data, user_id, image_hash):
     """Upload image to S3 and return URL"""
-    print("Uploading to S3")
     try:
         # Create a unique key for the S3 object
         s3_key = f"cars/{user_id}/{image_hash}.jpg"
-        print(s3_key)
         
         # Upload to S3 with public read access
         s3_client.put_object(
@@ -194,7 +196,6 @@ async def save_car(car_data: CarData):
             
             if car_data.imageUrl.startswith('data:image'):
                 # Parse data URL
-                print("Processing data URL image")
                 image_format, image_str = car_data.imageUrl.split(';base64,')
                 image_data = base64.b64decode(image_str)
             elif car_data.imageUrl.startswith('blob:'):
@@ -205,7 +206,6 @@ async def save_car(car_data: CarData):
                 )
             elif car_data.imageUrl.startswith(('http://', 'https://')):
                 # For external URLs, fetch the image
-                print("Fetching image from external URL")
                 try:
                     response = requests.get(car_data.imageUrl, timeout=10)
                     if response.status_code != 200:
@@ -224,16 +224,15 @@ async def save_car(car_data: CarData):
             image_hash = generate_image_hash(image_data)
             
             # Upload to S3
-            print(f"Uploading image to S3 for user {user_id}")
             s3_url = await upload_to_s3(image_data, user_id, image_hash)
             car_data.imageUrl = s3_url
         else:
-            print("Using existing S3 URL")
             # If it's already an S3 URL, extract the hash from the URL for consistency
             image_hash = car_data.imageUrl.split('/')[-1].split('.')[0]
         
         # Save to DynamoDB
         item = {
+            'username': car_data.username,
             'userId': car_data.userId,
             'savedAt': car_data.savedAt,  # Use as sort key
             'make': car_data.carInfo.make,
@@ -241,11 +240,15 @@ async def save_car(car_data: CarData):
             'year': car_data.carInfo.year,
             'link': car_data.carInfo.link,
             'imageUrl': car_data.imageUrl,
-            'imageHash': image_hash  # Store hash for unique identification
+            'imageHash': image_hash,  # Store hash for unique identification
+            'isPrivate': car_data.isPrivate  # Store privacy setting
         }
         
+        # Add description if provided
+        if car_data.description:
+            item['description'] = car_data.description
+        
         cars_table.put_item(Item=item)
-        print("Car data saved successfully")
         
         return {"success": True, "message": "Car data saved successfully"}
     except HTTPException as e:
@@ -273,7 +276,7 @@ async def get_user_cars(user_id: str):
         # Format the response
         cars = []
         for item in response.get('Items', []):
-            cars.append({
+            car_data = {
                 'userId': item.get('userId'),
                 'savedAt': item.get('savedAt'),
                 'carInfo': {
@@ -282,10 +285,16 @@ async def get_user_cars(user_id: str):
                     'year': item.get('year'),
                     'link': item.get('link'),
                 },
-                'imageUrl': item.get('imageUrl')
-            })
+                'imageUrl': item.get('imageUrl'),
+                'isPrivate': item.get('isPrivate', False)
+            }
+            
+            # Add description if it exists
+            if 'description' in item:
+                car_data['description'] = item.get('description')
+                
+            cars.append(car_data)
         
-        print(cars)
         return {"success": True, "cars": cars}
     except Exception as e:
         print(f"Error retrieving user cars: {str(e)}")
@@ -294,7 +303,7 @@ async def get_user_cars(user_id: str):
 
 @app.get("/get-all-cars")
 async def get_all_cars():
-    """Get all cars with user information for the explore page"""
+    """Get all public cars with user information for the explore page"""
     try:
         # Scan DynamoDB for all car entries
         response = cars_table.scan()
@@ -302,7 +311,11 @@ async def get_all_cars():
         # Format the response
         cars = []
         for item in response.get('Items', []):
-            cars.append({
+            # Skip private cars
+            if item.get('isPrivate', False):
+                continue
+                
+            car_data = {
                 'userId': item.get('userId'),
                 'savedAt': item.get('savedAt'),
                 'carInfo': {
@@ -313,9 +326,16 @@ async def get_all_cars():
                 },
                 'imageUrl': item.get('imageUrl'),
                 'likes': item.get('likes', 0),
-                'username': item.get('username', 'Unknown User'),
+                'likedBy': item.get('likedBy', []),  # Include the list of users who liked the post
+                'username': item.get('username', 'Anonymous'),
                 'profilePicture': item.get('profilePicture', '')
-            })
+            }
+            
+            # Add description if it exists
+            if 'description' in item:
+                car_data['description'] = item.get('description')
+                
+            cars.append(car_data)
         
         # Sort by savedAt in descending order (newest first)
         cars.sort(key=lambda x: x['savedAt'], reverse=True)
@@ -326,24 +346,45 @@ async def get_all_cars():
         return {"success": False, "error": str(e)}
 
 
-@app.post("/like-car/{user_id}/{saved_at}")
-async def like_car(user_id: str, saved_at: str):
-    """Increment like count for a car"""
+@app.post("/like-car/{car_owner_id}/{saved_at}/{liker_id}")
+async def like_car(car_owner_id: str, saved_at: str, liker_id: str):
+    """Like a car post, ensuring one like per user per post"""
     try:
-        # Update the item in DynamoDB
+        # First get the car details
+        car_response = cars_table.get_item(
+            Key={
+                'userId': car_owner_id,
+                'savedAt': saved_at
+            }
+        )
+        
+        if 'Item' not in car_response:
+            return {"success": False, "error": "Car not found"}
+            
+        car = car_response['Item']
+        liked_by = car.get('likedBy', [])  # Get existing likes list or empty list if none
+
+        # Check if user has already liked this post
+        if liker_id in liked_by:
+            return {"success": False, "error": "User has already liked this post"}
+
+        # Add user to likedBy list and increment likes count
+        liked_by.append(liker_id)
         response = cars_table.update_item(
             Key={
-                'userId': user_id,
+                'userId': car_owner_id,
                 'savedAt': saved_at
             },
-            UpdateExpression="SET likes = if_not_exists(likes, :zero) + :inc",
+            UpdateExpression="SET likedBy = :liked_by, likes = if_not_exists(likes, :zero) + :inc",
             ExpressionAttributeValues={
+                ':liked_by': liked_by,
                 ':zero': 0,
                 ':inc': 1
             },
             ReturnValues="UPDATED_NEW"
         )
         
+        # Get the updated likes count
         updated_likes = response.get('Attributes', {}).get('likes', 0)
         
         return {"success": True, "likes": updated_likes}
@@ -382,7 +423,6 @@ async def delete_car(user_id: str, saved_at: str):
                     Bucket=S3_BUCKET_NAME,
                     Key=s3_key
                 )
-                print(f"Deleted image from S3: {s3_key}")
             except Exception as s3_error:
                 print(f"Warning: Could not delete S3 image: {str(s3_error)}")
                 # Continue with the process even if S3 deletion fails
@@ -390,4 +430,72 @@ async def delete_car(user_id: str, saved_at: str):
         return {"success": True, "message": "Car deleted successfully"}
     except Exception as e:
         print(f"Error deleting car: {str(e)}")
+        return {"success": False, "error": str(e)}
+
+
+@app.get("/get-user-likes/{user_id}")
+async def get_user_likes(user_id: str):
+    """Get all posts that a user has liked"""
+    try:
+        # Query the likes table for all likes by this user
+        response = likes_table.query(
+            KeyConditionExpression='userId = :uid',
+            ExpressionAttributeValues={
+                ':uid': user_id
+            }
+        )
+        
+        # Extract the carIds from the likes
+        liked_posts = [item['carId'] for item in response.get('Items', [])]
+        
+        return {"success": True, "likedPosts": liked_posts}
+    except Exception as e:
+        print(f"Error getting user likes: {str(e)}")
+        return {"success": False, "error": str(e)}
+
+
+@app.post("/unlike-car/{car_owner_id}/{saved_at}/{liker_id}")
+async def unlike_car(car_owner_id: str, saved_at: str, liker_id: str):
+    """Unlike a car post"""
+    try:
+        # First get the car details
+        car_response = cars_table.get_item(
+            Key={
+                'userId': car_owner_id,
+                'savedAt': saved_at
+            }
+        )
+        
+        if 'Item' not in car_response:
+            return {"success": False, "error": "Car not found"}
+            
+        car = car_response['Item']
+        liked_by = car.get('likedBy', [])  # Get existing likes list or empty list if none
+
+        # Check if user has liked this post
+        if liker_id not in liked_by:
+            return {"success": False, "error": "User has not liked this post"}
+
+        # Remove user from likedBy list and decrement likes count
+        liked_by.remove(liker_id)
+        response = cars_table.update_item(
+            Key={
+                'userId': car_owner_id,
+                'savedAt': saved_at
+            },
+            UpdateExpression="SET likedBy = :liked_by, likes = if_not_exists(likes, :zero) - :dec",
+            ExpressionAttributeValues={
+                ':liked_by': liked_by,
+                ':zero': 0,
+                ':dec': 1
+            },
+            ReturnValues="UPDATED_NEW"
+        )
+        
+        # Get the updated likes count
+        updated_likes = response.get('Attributes', {}).get('likes', 0)
+        
+        return {"success": True, "likes": updated_likes}
+    except Exception as e:
+        print(f"Error unliking car: {str(e)}")
         return {"success": False, "error": str(e)}

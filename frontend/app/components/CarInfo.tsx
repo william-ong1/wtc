@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import tempLogo from "@/public/images/temp-logo.png";
 import React, { useState, useEffect } from 'react';
-import cloudSave from "@/public/images/cloud-save.svg";
+import cloudSave from "@/public/icons/cloud-save.svg";
 
 interface CarInfoProps {
   make: string;
@@ -100,7 +100,7 @@ const CarInfo: React.FC<CarInfoProps> = ({
   return (
     <div 
       id="info" 
-      className={`bg-gray-950 text-white w-[300px] rounded-2xl overflow-hidden transform transition-all duration-500 ease-in-out p-8 text-base border border-indigo-500/30 shadow-lg shadow-indigo-500/20 hover:scale-[1.01]`}
+      className={`bg-gray-950/80 text-white w-[300px] rounded-2xl overflow-hidden transform transition-all duration-500 ease-in-out p-8 text-base border border-gray-900 shadow-md shadow-blue-300/10 hover:scale-[1.01]]`}
     >
       <div className="flex justify-center">
         <div className={`relative items-center justify-center transition-all duration-300 ease-in-out ${isLoading ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
@@ -118,14 +118,14 @@ const CarInfo: React.FC<CarInfoProps> = ({
           />
           {isLoading && (
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
             </div>
           )}
         </div>
       </div>
 
       <div className={`text-center p-4 transition-all duration-300 ease-in-out ${animateContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-        <h2 className="text-2xl font-bold animate-gradient-text">
+        <h2 className="text-2xl font-bold text-custom-blue">
           {model !== "n/a" ? model : ""}
         </h2>
         <p className="text-lg text-gray-400 mt-1">
@@ -160,19 +160,25 @@ const CarInfo: React.FC<CarInfoProps> = ({
 
         {make !== "n/a" && (
         <div className={`flex flex-col items-center text-center transition-all duration-500 ease-in-out gap-4 ${animateContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`} style={{ transitionDelay: '250ms' }}>
-          <a href={link} target="_blank" className="text-white underline transition-all duration-300 ease-in-out text-sm hover:text-indigo-400 hover:scale-105">
+          <a href={link} target="_blank" className="text-custom-blue/85 text-sm hover:text-custom-blue flex items-center group underline transition-all duration-300 ease-in-out hover:scale-[1.02]"
+          >
             View More Details
+
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 mt-0.25 ml-[-0.5px] group-hover:translate-y-[-1.5px] group-hover:translate-x-[1.5px] transition-transform duration-200" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17 7l-10 10" />
+              <path d="M8 7l9 0l0 9" />
+            </svg>
           </a>
 
           <button 
             onClick={onSaveResults} 
             disabled={isSaved || isSaving}
-            className={`inline-flex text-base items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-300 ease-in-out transform 
+            className={`inline-flex text-base items-center gap-2 px-6 py-3 rounded-2xl font-semibold transition-all duration-300 ease-in-out transform 
               ${isSaved 
                 ? 'bg-[#16A34A]/80 cursor-default' 
                 : isSaving 
-                  ? 'bg-[#3B03FF]/60 cursor-wait'
-                  : 'bg-[#3B03FF]/80 hover:scale-105'
+                  ? 'bg-primary-blue cursor-wait'
+                  : 'bg-primary-blue hover:bg-primary-blue-hover hover:scale-105'
               }`}
           >
             {isSaved 

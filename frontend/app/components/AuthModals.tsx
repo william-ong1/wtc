@@ -10,9 +10,10 @@ interface AuthModalsProps {
   onClose: () => void;
   onSwitchToSignup: () => void;
   onSwitchToLogin: () => void;
+  onAuthSuccess?: () => void;
 }
 
-export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitchToSignup, onSwitchToLogin }: AuthModalsProps) {
+export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitchToSignup, onSwitchToLogin, onAuthSuccess }: AuthModalsProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -53,6 +54,10 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
     setTimeout(() => {
       onClose();
       setIsClosing(false);
+      // Reset state when closing
+      setShowConfirmation(false);
+      setShowForgotPassword(false);
+      setShowResetPasswordConfirmation(false);
     }, 300); // Match this with the animation duration
   };
 
@@ -64,7 +69,16 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
     
     try {
       await signIn({ username, password });
-      handleCloseWithAnimation();
+      // Set a success message but don't close immediately to allow user to see it
+      setSuccessMessage('Login successful! Redirecting...');
+      // Call onAuthSuccess if provided
+      if (onAuthSuccess) {
+        onAuthSuccess();
+      }
+      // Slight delay before closing to show success message
+      setTimeout(() => {
+        handleCloseWithAnimation();
+      }, 1000);
     } catch (error: any) {
       console.error('Login error:', error);
       if (error.name === 'UserNotConfirmedException') {
@@ -120,7 +134,16 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
       // Try to sign in automatically after confirmation
       try {
         await signIn({ username, password });
-        handleCloseWithAnimation();
+        // Set a success message but don't close immediately to allow user to see it
+        setSuccessMessage('Successfully signed in! Redirecting...');
+        // Call onAuthSuccess if provided
+        if (onAuthSuccess) {
+          onAuthSuccess();
+        }
+        // Slight delay before closing to show success message
+        setTimeout(() => {
+          handleCloseWithAnimation();
+        }, 1000);
       } catch (signInError: any) {
         console.error('Auto sign-in after confirmation failed:', signInError);
         setShowConfirmation(false);
@@ -210,17 +233,10 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
 
   return (
     <div 
-      className={`fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity duration-300 ease-in-out
-        ${isVisible && !isClosing ? 'opacity-100' : 'opacity-0'}
-        ${isVisible || isClosing ? 'pointer-events-auto' : 'pointer-events-none'}
-      `}
-      onClick={(e) => {
-        // Close modal when clicking outside
-        if (e.target === e.currentTarget) handleCloseWithAnimation();
-      }}
+      className={`fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-300 ease-in-out ${isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
     >
       <div 
-        className={`bg-gray-950 rounded-3xl p-6 w-full max-w-xs shadow-lg shadow-indigo-500/20 border border-indigo-500/30 relative transition-all duration-300 ease-in-out
+        className={`bg-gray-950 rounded-3xl p-6 w-full max-w-xs shadow-md shadow-blue-300/20 border border-gray-900 relative transition-all duration-300 ease-in-out
           ${isVisible && !isClosing ? 'opacity-100 scale-100 ' : 'opacity-0 scale-100'}
         `}
         onClick={(e) => e.stopPropagation()}
@@ -244,7 +260,7 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
             alt="Logo" 
             width={100} 
             height={100} 
-            className="mb-2"
+            className="w-18 h-18 mb-4"
           />
         </div>
 
@@ -281,7 +297,7 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-900/90 border border-indigo-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                  className="w-full px-3 py-2 bg-gray-900/90 border border-blue-300/10 rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-blue-500/30 text-sm"
                   required
                   disabled={isProcessing}
                   placeholder="Email or Username"
@@ -296,7 +312,7 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-900/90 border border-indigo-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                  className="w-full px-3 py-2 bg-gray-900/90 border border-blue-300/10 rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-blue-500/30 text-sm"
                   required
                   disabled={isProcessing}
                   placeholder="Password"
@@ -306,7 +322,7 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
               <div className="flex justify-end">
                 <button 
                   type="button" 
-                  className="text-sm text-indigo-400 hover:text-indigo-300"
+                  className="text-sm text-blue-400 hover:text-blue-300"
                   onClick={handleForgotPasswordClick}
                 >
                   Forgot password?
@@ -315,7 +331,7 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
               
               <button
                 type="submit"
-                className="w-full px-4 py-2 bg-[#3B03FF]/80 hover:bg-[#4B13FF] rounded-xl shadow-lg shadow-blue-900/20 transition-all duration-300 ease-in-out text-white font-medium disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98] text-sm"
+                className="w-full px-4 py-2 bg-primary-blue hover:bg-priamry-blue-hover rounded-xl shadow-lg shadow-blue-900/20 transition-all duration-300 ease-in-out text-white font-medium disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98] text-sm"
                 disabled={isProcessing}
               >
                 {isProcessing ? 'Logging in...' : 'Log In'}
@@ -326,7 +342,7 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
               <p className="text-gray-400 text-sm">
                 Don't have an account?{' '}
                 <button 
-                  className="text-indigo-400 hover:text-indigo-300 font-medium transition-colors duration-200 text-sm"
+                  className="text-blue-400 hover:text-blue-300 font-medium transition-colors duration-200 text-sm"
                   onClick={switchToSignup}
                 >
                   Sign up
@@ -348,7 +364,7 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-900/90 border border-indigo-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                  className="w-full px-3 py-2 bg-gray-900/90 border border-blue-300/10 rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-blue-500/30 text-sm"
                   required
                   disabled={isProcessing}
                   placeholder="Choose a username"
@@ -363,7 +379,7 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-900/90 border border-indigo-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                  className="w-full px-3 py-2 bg-gray-900/90 border border-blue-300/10 rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-blue-500/30 text-sm"
                   required
                   disabled={isProcessing}
                   placeholder="Enter your email"
@@ -378,7 +394,7 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-900/90 border border-indigo-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                  className="w-full px-3 py-2 bg-gray-900/90 border border-blue-300/10 rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-blue-500/30 text-sm"
                   required
                   disabled={isProcessing}
                   placeholder="Create a password"
@@ -386,7 +402,7 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
               </div>
               <button
                 type="submit"
-                className="w-full px-4 py-2 bg-[#3B03FF]/80 hover:bg-[#4B13FF] rounded-xl shadow-lg shadow-blue-900/20 transition-all duration-300 ease-in-out text-white font-medium disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98] text-sm"
+                className="w-full px-4 py-2 bg-primary-blue hover:bg-primary-blue-hover rounded-xl shadow-lg shadow-blue-900/20 transition-all duration-300 ease-in-out text-white font-medium disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98] text-sm"
                 disabled={isProcessing}
               >
                 {isProcessing ? 'Signing up...' : 'Sign Up'}
@@ -397,7 +413,7 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
               <p className="text-gray-400 text-sm">
                 Already have an account?{' '}
                 <button 
-                  className="text-indigo-400 hover:text-indigo-300 font-medium transition-colors duration-200 text-sm"
+                  className="text-blue-400 hover:text-blue-300 font-medium transition-colors duration-200 text-sm"
                   onClick={switchToLogin}
                 >
                   Log in
@@ -419,7 +435,7 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-900/90 border border-indigo-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                  className="w-full px-3 py-2 bg-gray-900/90 border border-blue-300/10 rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-blue-500/30 text-sm"
                   required
                   disabled={isProcessing}
                   placeholder="Enter your email"
@@ -430,17 +446,17 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
                 <button
                   type="button"
                   onClick={handleBackToLogin}
-                  className="flex-1 px-4 py-2 bg-gray-900/90 hover:bg-gray-800/70 hover:border-indigo-500/30 rounded-xl text-white font-medium disabled:opacity-50 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] text-sm"
+                  className="flex-1 px-4 py-2 bg-gray-900/90 hover:bg-gray-800/70 hover:border-blue-300/10 rounded-xl text-white font-medium disabled:opacity-50 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] text-sm"
                   disabled={isProcessing}
                 >
                   Back
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-[#3B03FF]/80 hover:bg-[#4B13FF] rounded-xl shadow-lg shadow-blue-900/20 transition-all duration-300 ease-in-out text-white font-medium disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98] text-sm"
+                  className="flex-1 px-4 py-2 bg-primary-blue hover:bg-primary-blue-hover rounded-xl shadow-lg shadow-blue-900/20 transition-all duration-300 ease-in-out text-white font-medium disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98] text-sm"
                   disabled={isProcessing}
                 >
-                  {isProcessing ? 'Sending...' : 'Send Reset Code'}
+                  {isProcessing ? 'Sending...' : 'Reset Password'}
                 </button>
               </div>
             </form>
@@ -459,7 +475,7 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
                   type="text"
                   value={confirmationCode}
                   onChange={(e) => setConfirmationCode(e.target.value)}
-                  className="w-full px-3 py-2 bg-[#1a1245] border border-indigo-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                  className="w-full px-3 py-2 bg-[#1a1245] border border-blue-300/10 rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-blue-500/30 text-sm"
                   required
                   disabled={isProcessing}
                   placeholder="Enter the code from your email"
@@ -474,7 +490,7 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
                   type="password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full px-3 py-2 bg-[#1a1245] border border-indigo-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                  className="w-full px-3 py-2 bg-[#1a1245] border border-blue-300/10 rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-blue-500/30 text-sm"
                   required
                   disabled={isProcessing}
                   placeholder="Enter your new password"
@@ -485,14 +501,14 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
                 <button
                   type="button"
                   onClick={handleBackToLogin}
-                  className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600/90 hover:border-indigo-500/30 rounded-xl text-white font-medium disabled:opacity-50 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] text-sm"
+                  className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600/90 hover:border-blue-300/10 rounded-xl text-white font-medium disabled:opacity-50 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] text-sm"
                   disabled={isProcessing}
                 >
                   Back
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-[#4B13FF] rounded-xl shadow-lg shadow-blue-900/20 transition-all duration-300 ease-in-out text-white font-medium disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98] text-sm"
+                  className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-600 to-primary-blue hover:from-blue-500 hover:to-primary-blue-hover rounded-xl shadow-lg shadow-blue-900/20 transition-all duration-300 ease-in-out text-white font-medium disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98] text-sm"
                   disabled={isProcessing}
                 >
                   {isProcessing ? 'Resetting...' : 'Reset Password'}
@@ -513,7 +529,7 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-3 py-2 bg-[#1a1245] border border-indigo-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                className="w-full px-3 py-2 bg-[#1a1245] border border-blue-300/10 rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-blue-500/30 text-sm"
                 required
                 disabled={isProcessing}
               />
@@ -527,7 +543,7 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
                 type="text"
                 value={confirmationCode}
                 onChange={(e) => setConfirmationCode(e.target.value)}
-                className="w-full px-3 py-2 bg-[#1a1245] border border-indigo-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                className="w-full px-3 py-2 bg-[#1a1245] border border-blue-300/10 rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-blue-500/30 text-sm"
                 required
                 disabled={isProcessing}
                 placeholder="Enter the code from your email"
@@ -538,7 +554,7 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
             </div>
             <button
               type="submit"
-              className="w-full px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-[#4B13FF] rounded-xl shadow-lg shadow-blue-900/20 transition-all duration-300 ease-in-out text-white font-medium disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98] text-sm"
+              className="w-full px-4 py-2 bg-gradient-to-r from-blue-600 to-primary-blue hover:from-blue-500 hover:to-primary-blue-hover rounded-xl shadow-lg shadow-blue-900/20 transition-all duration-300 ease-in-out text-white font-medium disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98] text-sm"
               disabled={isProcessing}
             >
               {isProcessing ? 'Confirming...' : 'Confirm Sign Up'}

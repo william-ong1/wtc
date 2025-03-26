@@ -6,11 +6,11 @@ import axios from "axios";
 import placeholderImg from "@/public/images/placeholder.png";
 import CarInfo from "./CarInfo";
 import { StatCard } from "./Cards";
-import HomeFeatureCards from "./HomeFeatureCards";
 import DragAndDrop from "./DragAndDrop";
 import { useAuth } from '../providers/AmplifyProvider';
 import AuthModals from './AuthModals';
-import { getCurrentUser } from 'aws-amplify/auth';
+import DescriptionModal from './SaveSettingsModal';
+import { fetchUserAttributes } from 'aws-amplify/auth';
 
 type Car = {
   make: string;
@@ -37,6 +37,9 @@ const HomeContent = () => {
 
   const [isLoginOpen, setIsLoginOpen] = useState<boolean>(false);
   const [isSignupOpen, setIsSignupOpen] = useState<boolean>(false);
+  const [isPrivacyDialogOpen, setIsPrivacyDialogOpen] = useState<boolean>(false);
+  const [carPrivacy, setCarPrivacy] = useState<boolean>(false);
+  const [carDescription, setCarDescription] = useState<string>('');
   const { user, refreshAuthState } = useAuth();
 
   const [shouldSaveAfterLogin, setShouldSaveAfterLogin] = useState<boolean>(false);
@@ -90,7 +93,7 @@ const HomeContent = () => {
             }
           });
         },
-        { threshold: 0.1 } // Trigger when 10% of the element is visible
+        { threshold: 0.0 } // Trigger when 10% of the element is visible
       );
       
       observer.observe(ref.current);
@@ -187,7 +190,7 @@ const HomeContent = () => {
     e.preventDefault();
     // Check if user is logged in
     if (user) {
-      saveCarData();
+      setIsPrivacyDialogOpen(true);
     } else {
       // If not logged in, display login modal and save afterwards.
       setShouldSaveAfterLogin(true);
@@ -206,21 +209,35 @@ const HomeContent = () => {
       
       setIsSaving(true);
       
-      // Get current user ID to associate with saved data
-      const currentUser = await getCurrentUser();
-      const userId = currentUser.userId;
+      if (!user) {
+        console.error("User must be logged in to save car data");
+        setShouldSaveAfterLogin(true);
+        setIsLoginOpen(true);
+        return;
+      }
       
-      // Convert blob URL to data URL if needed
+      const userId = user.userId;
       let imageUrl = image;
+      
+      // Get the user's preferred username using fetchUserAttributes
+      let username = 'Anonymous';
+      try {
+        const attributes = await fetchUserAttributes();
+        username = attributes.preferred_username || user.username || 'Anonymous';
+      } catch (error) {
+        console.error('Error fetching user attributes:', error);
+        username = user.username || 'Anonymous';
+      }
+      
+      // If we have a blob URL from an uploaded image, we need to convert it to a data URL
       if (image.startsWith('blob:')) {
         try {
           const response = await fetch(image);
           const blob = await response.blob();
           
-          imageUrl = await new Promise((resolve, reject) => {
-            const reader = new FileReader();
+          const reader = new FileReader();
+          imageUrl = await new Promise<string>((resolve) => {
             reader.onloadend = () => resolve(reader.result as string);
-            reader.onerror = reject;
             reader.readAsDataURL(blob);
           });
         } catch (err) {
@@ -231,9 +248,10 @@ const HomeContent = () => {
         }
       }
       
-      // Prepare data to save - exclude rarity
+      // Prepare data to save - include privacy setting and description
       const carData = {
         userId,
+        username,
         carInfo: {
           make: car.make,
           model: car.model,
@@ -242,6 +260,8 @@ const HomeContent = () => {
         },
         imageUrl: imageUrl, // Send the processed image URL
         savedAt: new Date().toISOString(),
+        isPrivate: carPrivacy,
+        description: carDescription.trim() || undefined
       };
       
       // Call backend API to save to DynamoDB and S3
@@ -249,22 +269,22 @@ const HomeContent = () => {
       const response = await axios.post(backendUrl, carData, {
         headers: { 'Content-Type': 'application/json' },
       });
-
-      if (response.status !== 200) {
-        console.error("Failed to save car data");
+      
+      if (response.data.success) {
+        setIsSaved(true);
         setIsSaving(false);
-        return;
+        setIsPrivacyDialogOpen(false);
+      } else {
+        console.error("Failed to save car data:", response.data.error);
+        alert("Failed to save car. Please try again.");
+        setIsSaving(false);
       }
-
-      // Update saved state
-      setIsSaved(true);
-      setIsSaving(false);
     } catch (error) {
       console.error("Error saving car data:", error);
-      alert("Failed to save car data. Please try again.");
+      alert("An error occurred while saving the car. Please try again.");
       setIsSaving(false);
     }
-  }, [car, image]);
+  }, [user, car, shouldSaveAfterLogin, carPrivacy, carDescription]);
 
   // Reset saved state when a new image is uploaded
   useEffect(() => {
@@ -275,25 +295,39 @@ const HomeContent = () => {
   useEffect(() => {
     // If user becomes authenticated and we have a pending save request
     if (user && shouldSaveAfterLogin) {
-      saveCarData();
+      setIsPrivacyDialogOpen(true);
       setShouldSaveAfterLogin(false);
     }
   }, [user, shouldSaveAfterLogin, saveCarData]);
+
+  const handleClosePrivacyModal = (): void => {
+    setIsPrivacyDialogOpen(false);
+  };
+  
+  const handleSaveWithPrivacy = (): void => {
+    setIsPrivacyDialogOpen(false);
+    saveCarData();
+  };
+  
+  const handleTogglePrivacy = (isPrivate: boolean): void => {
+    setCarPrivacy(isPrivate);
+  };
+  
+  const handleDescriptionChange = (description: string): void => {
+    setCarDescription(description);
+  };
 
   return (
     <>
       <div className="flex flex-col flex-1 items-center w-full lg:w-3/4 h-full py-4 lg:py-8 px-6 lg:px-12 lg:gap-8 fade-in overflow-x-hidden max-w-full">
         {/* Title + description */}
-        <div 
-          ref={headerRef}
-          className={`flex flex-col items-center text-center w-full lg:w-3/4 gap-2 lg:gap-4 transition-all duration-700 ease-out ${ headerVisible  ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-10' }`}
-        >
-          <h1 className="text-2xl font-bold animate-gradient-text">
+        <div ref={headerRef} className={`flex flex-col items-center text-center w-full lg:w-3/4 gap-2 lg:gap-4 transition-all duration-700 ease-out ${ headerVisible  ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-10' }`}>
+          <h1 className="text-2xl font-bold text-custom-blue">
             What's That Car?
           </h1>
 
           <p className="text-sm lg:text-base text-gray-300 leading-relaxed">
-            From daily commuters to rare supercars, our AI-powered car recognition system can identify any vehicle with 97%<sup className="text-[0.6rem]">†</sup> accuracy. Whether you're a car enthusiast or just curious about a special car you spotted, we've got you covered.
+            From daily commuters to rare supercars, our AI-powered car recognition system can identify any vehicle with 97%<sup className="text-[0.6rem] relative mb-12">†</sup> accuracy. Whether you're a car enthusiast or just curious about a special car you spotted, we've got you covered.
           </p>
 
           {/* Stat cards */}
@@ -338,7 +372,7 @@ const HomeContent = () => {
                     width={300}
                     height={450}
                     style={{ objectFit: "contain" }}
-                    className={`rounded-2xl border border-indigo-500/30 shadow-lg shadow-indigo-500/20 transition-all duration-500 ease-in-out ${imageTransitioning ? 'opacity-70 scale-[0.98]' : 'opacity-100 scale-100'}`}
+                    className={`rounded-2xl border border-gray-900 bg-gray-950/80 shadow-md shadow-blue-300/10 transition-all duration-500 ease-in-out ${imageTransitioning ? 'opacity-70 scale-[0.98]' : 'opacity-100 scale-100'}`}
                   />
                 </div>
               </label>
@@ -357,7 +391,7 @@ const HomeContent = () => {
                 <div>
                   <label
                     htmlFor="file-input"
-                    className={`inline-block px-6 py-3 rounded-2xl text-white text-base font-semibold bg-[#3B03FF]/80 hover:bg-[#4B13FF] transition-all duration-300 ease-in-out transform ${loading ? 'cursor-wait animate-gradient opacity-50 cursor-default hover:scale-100' : 'cursor-pointer hover:scale-105 shadow-lg hover:shadow-blue-500/20'}`}
+                    className={`inline-block px-6 py-3 rounded-2xl text-white text-base font-semibold bg-primary-blue hover:bg-primary-blue-hover transition-all duration-300 ease-in-out transform ${loading ? 'cursor-wait opacity-50 cursor-default hover:scale-100' : 'cursor-pointer hover:scale-105 shadow-lg hover:shadow-blue-500/20'}`}
                     >
                     {loading ? <div className="flex flex-row justify-center items-center gap-2"> Analyzing Image... <div className="animate-spin rounded-full mb-0.5 mr-1 h-4 w-4 border-t-2 border-b-2 border-white ml-1"> </div> </div>
                     : <span> Upload Image </span>}
@@ -390,16 +424,27 @@ const HomeContent = () => {
         </div>
 
         {/* Feature cards */}
-        <div ref={featureCardsRef}>
+        {/* <div ref={featureCardsRef}>
           <HomeFeatureCards visible={featureCardsVisible} />
-        </div>
+        </div> */}
 
         {/* Footnote */}
-        <div className="flex flex-col text-[0.5rem] lg:text-[0.7rem] text-gray-700 mt-6 text-center max-w-2xl gap-1">
-          <p><sup>†</sup> Predictions may vary based on image quality, lighting conditions, viewing angle, and model rarity. Accuracy was determined with clear, well-lit photos of vehicles from standard viewing angles.</p>
-          <p> <span className="text-[0.6rem] lg:text-[0.8rem]">‡</span> Rarity is AI-generated and may vary. It is a dynamic estimate based on the car's appearance and the data available. </p> 
+        <div className="flex flex-col text-[0.6rem] lg:text-[0.7rem] text-gray-700 mt-6 text-center max-w-2xl gap-1">
+          <p><sup className="relative bottom-[0.3em]">†</sup> Predictions may vary based on image quality, lighting conditions, viewing angle, and model rarity. Accuracy was determined with clear, well-lit photos of vehicles from standard viewing angles.</p>
+          <p> <span className="lg:text-[0.8rem]">‡</span> Rarity is AI-generated and may vary. It is a dynamic estimate based on the car's appearance and the data available. </p> 
         </div>
       </div>
+
+      {/* Description Modal */}
+      <DescriptionModal 
+        isOpen={isPrivacyDialogOpen}
+        isPrivate={carPrivacy}
+        description={carDescription}
+        onClose={handleClosePrivacyModal}
+        onSave={handleSaveWithPrivacy}
+        onTogglePrivacy={handleTogglePrivacy}
+        onDescriptionChange={handleDescriptionChange}
+      />
 
       {/* Auth Modals */}
       <AuthModals 
