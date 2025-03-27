@@ -8,7 +8,7 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'wtc-image-bucket.s3.us-east-2.amazonaws.com',
         port: '',
-        pathname: '/cars/**',
+        pathname: '**',
       },
     ],
   },

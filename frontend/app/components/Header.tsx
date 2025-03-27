@@ -7,6 +7,7 @@ import { usePathname } from 'next/navigation';
 import { useAuth } from '../providers/AmplifyProvider';
 import AuthModals from './AuthModals';
 import { fetchUserAttributes } from 'aws-amplify/auth';
+import { profile } from "console";
 
 interface NavLinkProps {
   label: string;
@@ -18,6 +19,7 @@ const Header = () => {
   const [isLoginOpen, setIsLoginOpen] = useState<boolean>(false);
   const [isSignupOpen, setIsSignupOpen] = useState<boolean>(false);
   const [username, setUsername] = useState<string | null>(null);
+  const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const [authReady, setAuthReady] = useState<boolean>(false);
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState<boolean>(false);
@@ -30,15 +32,10 @@ const Header = () => {
           // Only fetch attributes if we have a user
           const attributes = await fetchUserAttributes();
           // Use preferred_username if available, otherwise use the username from user object
-          setUsername(attributes.preferred_username || user.username);
+          setUsername(attributes.preferred_username || "");
+          setProfilePicture(attributes.picture || "");
         } catch (error) {
           console.error('Error fetching user attributes:', error);
-          // Fallback to username from user object if available
-          if (user.username) {
-            setUsername(user.username);
-          } else {
-            setUsername('User');
-          }
         }
       } else {
         setUsername(null);
@@ -221,20 +218,32 @@ const Header = () => {
                       <button 
                         id="profile-button"
                         onClick={toggleProfileMenu} 
-                        className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-r from-blue-600 to-primary-blue text-white hover:shadow-md hover:shadow-blue-500/30 transition-all duration-000 ease-in-out transform hover:scale-105"
+                        className="relative h-10 w-10 rounded-full overflow-hidden border border-gray-700/50 shadow-lg shadow-black/20 hover:shadow-md hover:shadow-black/30 transition-all duration-200 ease-in-out transform hover:scale-105"
                         aria-label="Open profile menu"
                       >
-                        {username[0].toUpperCase()}
+                        {profilePicture ? (
+                          <Image 
+                            src={profilePicture} 
+                            alt="Profile" 
+                            fill
+                            sizes="40px"
+                            className="object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center text-gray-300 font-bold">
+                            {username[0].toUpperCase()}
+                          </div>
+                        )}
                       </button>
                       
                       {/* Profile dropdown menu */}
                       <div 
                         id="profile-menu"
-                        className={`absolute right-0 top-12 z-50 backdrop-blur-md border-l-[0.25px] border-b-[0.25px] border-gray-800 shadow-md shadow-indigo-300/10 rounded-bl-2xl overflow-hidden transition-all duration-300 ease-in-out ${isProfileMenuOpen ? 'max-h-[500px] w-[200px] opacity-100 translate-y-0' : 'max-h-0 w-[200px] opacity-0'}`}
+                        className={`absolute right-0 top-12 z-50 backdrop-blur-md border-l-[0.25px] border-b-[0.25px] border-gray-800 shadow-md shadow-blue-300/10 rounded-bl-2xl overflow-hidden transition-all duration-300 ease-in-out ${isProfileMenuOpen ? 'max-h-[500px] w-[200px] opacity-100 translate-y-0' : 'max-h-0 w-[200px] opacity-0'}`}
                       >
                         <div className={`p-4 flex flex-col gap-4 transition-all duration-300 ease-in-out ${isProfileMenuOpen ? 'opacity-100 translate-y-0 delay-100' : 'opacity-0 -translate-y-4'}`}>
                           
-                          <div className="flex flex-col items-left justify-left gap-2 border-b border-blue-500/20 pb-4">
+                          <div className="flex flex-col items-left justify-left gap-2 border-b border-gray-900 pb-4">
                             <NavLink label="Saved" link="/profile/saved" onClick={() => setIsProfileMenuOpen(false)} />
                             <NavLink label="Profile" link="/profile" onClick={() => setIsProfileMenuOpen(false)} />
                           </div>
@@ -283,7 +292,7 @@ const Header = () => {
       {/* Mobile menu dropdown */}
       <div 
         id="mobile-menu"
-        className={`lg:hidden fixed right-0 top-10 z-[99] bg-black backdrop-blur-md border-l-[0.25px] border-b-[0.25px] border-blue-300/20 shadow-md shadow-blue-300/10 rounded-bl-2xl overflow-hidden transition-all duration-500 ease-in-out ${isMenuOpen ? 'max-h-[500px] w-[250px] opacity-100 translate-y-0' : 'max-h-0 w-[250px] opacity-0'}`}
+        className={`lg:hidden fixed right-0 top-10 z-[99] bg-black backdrop-blur-md border-l-[0.25px] border-b-[0.25px] border-gray-900 shadow-md shadow-blue-300/10 rounded-bl-2xl overflow-hidden transition-all duration-500 ease-in-out ${isMenuOpen ? 'max-h-[500px] w-[250px] opacity-100 translate-y-0' : 'max-h-0 w-[250px] opacity-0'}`}
       >
         <div className={`p-4 flex flex-col gap-4 transition-all duration-500 ease-in-out ${isMenuOpen ? 'opacity-100 translate-y-0 delay-100' : 'opacity-0 -translate-y-4'}`}>
 

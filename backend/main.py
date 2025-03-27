@@ -11,9 +11,10 @@ import boto3
 import hashlib
 import base64
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 import requests
+import uuid
 
 # Load environment variables
 load_dotenv()
@@ -128,7 +129,7 @@ async def upload_to_s3(image_data, user_id, image_hash):
     """Upload image to S3 and return URL"""
     try:
         # Create a unique key for the S3 object
-        s3_key = f"cars/{user_id}/{image_hash}.jpg"
+        s3_key = f"{user_id}/{image_hash}.jpg"
         
         # Upload to S3 with public read access
         s3_client.put_object(
@@ -581,4 +582,62 @@ async def update_username(update_data: UsernameUpdate):
         return {"success": True}
     except Exception as e:
         print(f"Error updating username: {str(e)}")
+        return {"success": False, "error": str(e)}
+
+
+@app.post("/upload-profile-photo/{user_id}")
+async def upload_profile_photo(user_id: str, file: UploadFile = File(...)):
+    """Upload a profile photo to S3 and update the user's record"""
+
+    pil_image, image_data = preprocess_image(file)
+    s3_url = await upload_to_s3(image_data, user_id, generate_image_hash(image_data))
+
+    user_response = users_table.get_item(
+        Key={'userId': user_id}
+    )
+
+    if 'Item' in user_response:
+        old_url = user_response['Item'].get('profilePhoto', '')
+        if old_url:
+            old_key = old_url.split(f"{S3_BUCKET_NAME}.s3.{aws_region}.amazonaws.com/")[1]
+            try:
+                s3_client.delete_object(
+                    Bucket=S3_BUCKET_NAME,
+                    Key=old_key
+                )
+            except Exception as e:
+                print(f"Error deleting old photo: {str(e)}")
+
+    users_table.update_item(
+        Key={'userId': user_id},
+        UpdateExpression='SET profilePhoto = :photo_url',
+        ExpressionAttributeValues={
+            ':photo_url': s3_url
+        }
+    )
+
+    return {"success": True, "photo_url": s3_url}
+
+
+@app.post("/get-profile-photos")
+async def get_profile_photos(user_ids: List[str]):
+    """Get profile photo URLs for a list of user IDs"""
+    try:
+        photos = {}
+        for user_id in user_ids:
+            try:
+                response = users_table.get_item(
+                    Key={'userId': user_id}
+                )
+                if 'Item' in response:
+                    photos[user_id] = response['Item'].get('profilePhoto', '')
+                else:
+                    photos[user_id] = ''
+            except Exception as e:
+                print(f"Error getting profile photo for user {user_id}: {str(e)}")
+                photos[user_id] = ''
+        
+        return {"success": True, "photos": photos}
+    except Exception as e:
+        print(f"Error getting profile photos: {str(e)}")
         return {"success": False, "error": str(e)}

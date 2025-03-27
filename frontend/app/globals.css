@@ -9,13 +9,6 @@
   color: #ffffff;
 }
 
-/* @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #000000;
-    --foreground: #ffffff;
-  }
-} */
-
 html, body {
   height: 100%;
   margin: 0;
@@ -30,27 +23,6 @@ body {
   flex-direction: column;
   height: fit-content;
   max-width: 100vw;
-}
-
-@keyframes gradient {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
-.animate-gradient {
-  background: linear-gradient(90deg, #3B03FF, #8A4DFF, #3B03FF);
-  background-size: 200% 200%;
-  animation: gradient 4s ease infinite;
-}
-
-.animate-gradient-text {
-  background: linear-gradient(90deg, #3B82F6, #8B5CF6, #3B82F6);
-  background-size: 200% 200%;
-  background-clip: text;
-  -webkit-background-clip: text;
-  color: transparent;
-  animation: gradient 6s ease infinite;
 }
 
 /* Fade-in effect */

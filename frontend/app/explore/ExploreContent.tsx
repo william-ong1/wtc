@@ -34,9 +34,10 @@ type CarCardProps = {
   onUnlike: (userId: string, savedAt: string) => void;
   hasLiked?: boolean;
   currentUsernames: Record<string, string>;
+  profilePhotos: Record<string, string>;
 };
 
-const CarCard: FC<CarCardProps> = ({ car, onLike, onUnlike, hasLiked = false, currentUsernames }: CarCardProps) => {
+const CarCard: FC<CarCardProps> = ({ car, onLike, onUnlike, hasLiked = false, currentUsernames, profilePhotos }: CarCardProps) => {
   const make = car.carInfo.make;
   const model = car.carInfo.model;
   const year = car.carInfo.year;
@@ -74,16 +75,16 @@ const CarCard: FC<CarCardProps> = ({ car, onLike, onUnlike, hasLiked = false, cu
       {/* User info */}
       <div className="flex items-center gap-2 p-3">
         <div className="relative h-8 w-8 rounded-full overflow-hidden">
-          {car.profilePicture ? (
+          {profilePhotos[car.userId] ? (
             <Image
-              src={car.profilePicture}
+              src={profilePhotos[car.userId]}
               alt={currentUsername}
               fill
               sizes="32px"
               style={{ objectFit: "cover" }}
             />
           ) : (
-            <div className="w-full h-full bg-indigo-500 flex items-center justify-center text-xs text-white font-bold">
+            <div className="w-full h-full bg-blue-500 flex items-center justify-center text-xs text-white font-bold">
               {currentUsername.charAt(0).toUpperCase()}
             </div>
           )}
@@ -146,7 +147,7 @@ const CarCard: FC<CarCardProps> = ({ car, onLike, onUnlike, hasLiked = false, cu
             />
 
             <div className="absolute bottom-2 right-3 z-20">
-              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-600/80 backdrop-blur-sm text-white border border-indigo-500/30 shadow-lg shadow-indigo-500/10">
+              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-600/80 backdrop-blur-sm text-white border border-blue-500/30 shadow-lg shadow-blue-500/10">
                 {year}
               </span>
             </div>
@@ -166,7 +167,7 @@ const CarCard: FC<CarCardProps> = ({ car, onLike, onUnlike, hasLiked = false, cu
           {car.description && (
             <button
               onClick={() => setShowDescription(!showDescription)}
-              className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors duration-200"
+              className="text-xs text-blue-400 hover:text-blue-300 transition-colors duration-200"
               aria-label={showDescription ? "Hide description" : "Show description"}
             >
               {showDescription ? "Hide description" : "View description"}
@@ -201,10 +202,25 @@ const ExploreContent = () => {
   const [sortOption, setSortOption] = useState<SortOption>('newest');
   const [dropdownOpen, setDropdownOpen] = useState<boolean>(false);
   const [currentUsernames, setCurrentUsernames] = useState<Record<string, string>>({});
+  const [profilePhotos, setProfilePhotos] = useState<Record<string, string>>({});
   const dropdownRef = useRef<HTMLDivElement>(null);
   const auth = useAuth();
   const user = auth.user;
   const refreshAuthState = auth.refreshAuthState;
+
+  // Handle click outside to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // Function to fetch current usernames
   const fetchCurrentUsernames = async (userIds: string[]): Promise<void> => {
@@ -223,19 +239,22 @@ const ExploreContent = () => {
     }
   };
 
-  // Handle click outside to close dropdown
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setDropdownOpen(false);
+  // Function to fetch profile photos
+  const fetchProfilePhotos = async (userIds: string[]): Promise<void> => {
+    try {
+      const hostname = window.location.hostname;
+      const backendUrl = `http://${hostname}:8000/get-profile-photos`;
+      const response = await axios.post(backendUrl, userIds);
+      
+      if (response.data.success) {
+        setProfilePhotos(response.data.photos);
+      } else {
+        console.error("Failed to fetch profile photos:", response.data.error);
       }
-    };
-    
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
+    } catch (error) {
+      console.error("Error fetching profile photos:", error);
+    }
+  };
 
   const fetchAllCars = async (): Promise<void> => {
     setLoading(true);
@@ -246,10 +265,12 @@ const ExploreContent = () => {
       
       if (response.data.success) {
         setCars(response.data.cars);
-        // Fetch current usernames for all cars
+        // Fetch current usernames and profile photos for all cars
         const userIds = response.data.cars.map((car: Car) => car.userId);
-        console.log(userIds);
-        await fetchCurrentUsernames(userIds);
+        await Promise.all([
+          fetchCurrentUsernames(userIds),
+          fetchProfilePhotos(userIds)
+        ]);
       } else {
         console.error("Failed to fetch cars:", response.data.error);
       }
@@ -359,11 +380,11 @@ const ExploreContent = () => {
           <h1 className="text-2xl font-bold text-custom-blue mb-3 md:mb-0 text-left"> Explore Cars </h1>
           
           <div className="flex items-center self-start md:self-auto">
-            <span className="text-gray-300 font-medium text-sm mr-2">Sort by</span>
+            <span className="text-gray-400 text-sm mr-2">Sort by</span>
             <div className="relative inline-block" ref={dropdownRef}>
               <button 
                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="flex items-center justify-between text-sm min-w-[140px] border border-gray-800 text-white py-2 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 hover:border-indigo-500/30 hover:bg-indigo-950/20 hover:shadow-sm hover:shadow-indigo-500/10 transition-all duration-200"
+                className="flex items-center justify-between text-sm min-w-[140px] border border-gray-800 text-white py-2 px-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 hover:border-custom-blue/30 hover:bg-blue-950/20 hover:shadow-sm hover:shadow-blue-500/10 transition-all duration-200"
               >
                 <span className="flex items-center">
                   {sortOption === 'newest' && ( <Image src="/icons/sort-newest.svg" alt="Newest first" width={16} height={16} className="mr-2" /> )}
@@ -377,7 +398,7 @@ const ExploreContent = () => {
               </button>
               
               <div 
-                className={`absolute right-0 mt-2 z-50 bg-gray-950/95 backdrop-blur-md border-[0.25px] border-indigo-500/20 shadow-lg shadow-indigo-500/10 rounded-xl overflow-hidden transition-all duration-300 ease-in-out w-full
+                className={`absolute right-0 mt-2 z-50 bg-gray-950/95 backdrop-blur-md border-[0.25px] border-blue-500/20 shadow-lg shadow-blue-500/10 rounded-xl overflow-hidden transition-all duration-300 ease-in-out w-full
                   ${dropdownOpen ? 'max-h-[500px] opacity-100 translate-y-0' : 'max-h-0 opacity-0 -translate-y-4 pointer-events-none'}`}
               >
                 <div className={`flex flex-col transition-all duration-300 ease-in-out
@@ -385,21 +406,21 @@ const ExploreContent = () => {
                 >
                   <button 
                     onClick={() => handleSortChange('newest')}
-                    className={`w-full text-left px-4 py-2.5 hover:bg-indigo-950/30 transition-colors text-sm flex items-center ${sortOption === 'newest' ? 'bg-indigo-950/40 text-white' : 'text-white'}`}
+                    className={`w-full text-left px-4 py-2.5 hover:bg-blue-950/30 transition-colors text-sm flex items-center ${sortOption === 'newest' ? 'bg-blue-950/40 text-white' : 'text-white'}`}
                   >
                     <Image src="/icons/sort-newest.svg" alt="Newest first" width={16} height={16} className="mr-2" />
                     Newest First
                   </button>
                   <button 
                     onClick={() => handleSortChange('oldest')}
-                    className={`w-full text-left px-4 py-2.5 hover:bg-indigo-950/30 transition-colors text-sm flex items-center ${sortOption === 'oldest' ? 'bg-indigo-950/40 text-white' : 'text-white'}`}
+                    className={`w-full text-left px-4 py-2.5 hover:bg-blue-950/30 transition-colors text-sm flex items-center ${sortOption === 'oldest' ? 'bg-blue-950/40 text-white' : 'text-white'}`}
                   >
                     <Image src="/icons/sort-oldest.svg" alt="Oldest first" width={16} height={16} className="mr-2" />
                     Oldest First
                   </button>
                   <button 
                     onClick={() => handleSortChange('mostLiked')}
-                    className={`w-full text-left px-4 py-2.5 hover:bg-indigo-950/30 transition-colors text-sm flex items-center ${sortOption === 'mostLiked' ? 'bg-indigo-950/40 text-white' : 'text-white'}`}
+                    className={`w-full text-left px-4 py-2.5 hover:bg-blue-950/30 transition-colors text-sm flex items-center ${sortOption === 'mostLiked' ? 'bg-blue-950/40 text-white' : 'text-white'}`}
                   >
                     <Image src="/icons/sort-most-liked.svg" alt="Most liked" width={16} height={16} className="mr-2" />
                     Most Liked
@@ -424,6 +445,7 @@ const ExploreContent = () => {
                   onUnlike={unlikeCar}
                   hasLiked={user ? (car.likedBy || []).includes(user.userId) : false}
                   currentUsernames={currentUsernames}
+                  profilePhotos={profilePhotos}
                 />
                 {/* Add divider only on small screens and not for the last item */}
                 {index < sortedCars.length - 1 && (
