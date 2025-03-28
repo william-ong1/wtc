@@ -12,49 +12,10 @@ import hashlib
 import base64
 from pydantic import BaseModel
 from typing import Optional, List
-from datetime import datetime
 import requests
-import uuid
 
 # Load environment variables
 load_dotenv()
-
-# # Configure Gemini API
-genai.configure(api_key=os.getenv('GOOGLE_API_KEY'))
-model = genai.GenerativeModel('gemini-2.0-flash')
-
-# Configure AWS services
-aws_region = os.getenv('AWS_REGION')
-aws_access_key = os.getenv('AWS_ACCESS_KEY_ID')
-aws_secret_key = os.getenv('AWS_SECRET_ACCESS_KEY')
-
-# DynamoDB setup
-dynamodb = boto3.resource(
-    'dynamodb', 
-    region_name=aws_region,
-    aws_access_key_id=aws_access_key,
-    aws_secret_access_key=aws_secret_key
-)
-cars_table = dynamodb.Table(os.getenv('DYNAMODB_TABLE_NAME'))
-likes_table = dynamodb.Table(os.getenv('DYNAMODB_LIKES_TABLE_NAME'))
-users_table = dynamodb.Table(os.getenv('DYNAMODB_USERS_TABLE_NAME'))
-
-# Cognito setup
-cognito_client = boto3.client(
-    'cognito-idp',
-    region_name=aws_region,
-    aws_access_key_id=aws_access_key,
-    aws_secret_access_key=aws_secret_key
-)
-
-# S3 setup
-s3_client = boto3.client(
-    's3',
-    region_name=aws_region,
-    aws_access_key_id=aws_access_key,
-    aws_secret_access_key=aws_secret_key
-)
-S3_BUCKET_NAME = os.getenv('S3_BUCKET_NAME')
 
 app = FastAPI()
 
@@ -67,66 +28,125 @@ app.add_middleware(
 	allow_headers=["*"],
 )
 
-# Define models
+# Configure Gemini API (Gemini 2.0 Flash)
+genai.configure(api_key=os.getenv('GOOGLE_API_KEY'))
+model = genai.GenerativeModel('gemini-2.0-flash')
+
+# Configure AWS services
+aws_region = os.getenv('AWS_REGION')
+aws_access_key = os.getenv('AWS_ACCESS_KEY_ID')
+aws_secret_key = os.getenv('AWS_SECRET_ACCESS_KEY')
+
+# DynamoDB setup for car posts and user info
+dynamodb = boto3.resource(
+    'dynamodb', 
+    region_name=aws_region,
+    aws_access_key_id=aws_access_key,
+    aws_secret_access_key=aws_secret_key
+)
+cars_table = dynamodb.Table(os.getenv('DYNAMODB_TABLE_NAME'))
+users_table = dynamodb.Table(os.getenv('DYNAMODB_USERS_TABLE_NAME'))
+
+# Cognito setup for auth
+cognito_client = boto3.client(
+    'cognito-idp',
+    region_name=aws_region,
+    aws_access_key_id=aws_access_key,
+    aws_secret_access_key=aws_secret_key
+)
+
+# S3 setup for image storage
+s3_client = boto3.client(
+    's3',
+    region_name=aws_region,
+    aws_access_key_id=aws_access_key,
+    aws_secret_access_key=aws_secret_key
+)
+S3_BUCKET_NAME = os.getenv('S3_BUCKET_NAME')
+
+# Car info data
 class CarInfo(BaseModel):
     make: str
     model: str
     year: str
     link: Optional[str] = None
 
+# Car post data
 class CarData(BaseModel):
     userId: str
+    savedAt: str
     carInfo: CarInfo
     imageUrl: str
     username: str
-    savedAt: Optional[str] = None
     isPrivate: Optional[bool] = False
     description: Optional[str] = None
 
-class UserCreate(BaseModel):
+# User data for creating/updating user info with Cognito user id
+class UserInfo(BaseModel):
     user_id: str
     username: str
 
-class UsernameUpdate(BaseModel):
-    user_id: str
-    new_username: str
 
-# Generate image hash for S3 filenames
-def generate_image_hash(image_data):
-    """Generate a hash of image data for unique filenames"""
-    return hashlib.md5(image_data).hexdigest()
+def process_image(image: UploadFile) -> tuple:
+    """
+    Process an uploaded image.
+    
+    Args:
+        image (UploadFile): The image as a file.
+        
+    Returns:
+        A tuple containing the processed PIL image and the original image bytes.
+    """
 
-
-# Define preprocessing transformations
-def preprocess_image(image: UploadFile) -> tuple:
-    """Process image and return PIL image and original bytes"""
-    # Read image bytes
+    # Read image and retrieve bytes
     image_data = image.file.read()
     image_bytes = io.BytesIO(image_data)
 
     try:
-        # Try to open normally
         pil_image = Image.open(image_bytes)
     except Image.UnidentifiedImageError:
-        # If it's a HEIC file, use pillow-heif to convert
+        # Use pillow-heif to convert image if it's HEIF (common file type for Apple images)
         heif_image = pillow_heif.open_heif(image_bytes)
-        pil_image = Image.frombytes(
-            heif_image.mode, 
-            heif_image.size, 
-            heif_image.data
-        )
-        # Convert HEIC to JPEG for storage
+        pil_image = Image.frombytes(heif_image.mode, heif_image.size, heif_image.data)
+
+        # Convert HEIC to JPEG for storage (allow displaying of HEIC images on non-Safari browsers)
         buffer = io.BytesIO()
         pil_image.save(buffer, format="JPEG")
         image_data = buffer.getvalue()
 
+    # Ensure that image is RGB
     pil_image = pil_image.convert('RGB')
+
     return pil_image, image_data
 
 
-# Function to upload image to S3
-async def upload_to_s3(image_data, user_id, image_hash):
-    """Upload image to S3 and return URL"""
+def generate_image_hash(image_data) -> str:
+    """ 
+    Generate a hash of image data for unique filenames.
+    
+    Args:
+        image_data: The data of an image in bytes.
+
+    Returns:
+        A unique hash of the image data.
+    """
+    
+    return hashlib.md5(image_data).hexdigest()
+
+
+async def upload_to_s3(image_data, user_id, image_hash) -> str:
+    """
+    Upload an image to S3.
+    
+    Args:
+        image_data: The image data in bytes.
+        user_id: The Cognito user id of the uploader.
+        image_hash: The unique image hash for the file name.
+
+    Returns:
+        The image's S3 url that is publicly accessible.
+    """
+
     try:
         # Create a unique key for the S3 object
         s3_key = f"{user_id}/{image_hash}.jpg"
@@ -137,35 +157,46 @@ async def upload_to_s3(image_data, user_id, image_hash):
             Key=s3_key,
             Body=image_data,
             ContentType='image/jpeg',
-            ACL='public-read'  # Make object publicly accessible
+            ACL='public-read'
         )
         
-        # Generate URL
+        # Return url for the uploaded S3 object
         s3_url = f"https://{S3_BUCKET_NAME}.s3.{aws_region}.amazonaws.com/{s3_key}"
         return s3_url
     except Exception as e:
-        print(f"S3 upload error: {str(e)}")
         raise e
 
 
 @app.post("/predict/")
-async def predict(file: UploadFile = File(...)):
-    # Process the image
-    image, _ = preprocess_image(file)
+async def predict(image: UploadFile) -> dict[str, any]:
+    """
+    Identify the car in an image with Gemini.
+
+    Args:
+        image (UploadFile): The image as a file.
+ 
+    Returns:
+        The car information in JSON format containing keys for the car's make, model, year, rarity, and link to additional information with the key "car" if "success" is True.
+    """
+
+    # Process the image first 
+    image, _ = process_image(image)
     
-    # Prepare prompt for Gemini
-    prompt = """Please analyze this car image and provide the following details in a structured format:
-	- Make (Manufacturer)
-	- Model (Do not include any information that isn't needed, just the model name, number, and trim if possible (only if you are confident in the trim))
-	- Exact Year (Be exact if possible; if the exact year cannot be determined, provide the possible year range)
-    - Rarity (from 1-100)
-    - Link (Wikipedia link for the car)
+    # Gemini prompt
+    prompt = """
+        Please analyze this car image and provide the following details in a structured format:
+        - Make (Manufacturer)
+        - Model (Do not include any information that isn't needed, just the model name, number, and trim if you are very confident in the trim)
+        - Exact Year (Be exact if possible; if the exact year cannot be determined, provide the possible year range)
+        - Rarity (Choose one: Unknown (if there is no car or unknown info), Common, Rare, Very Rare, or Extremely Rare)
+        - Link (Wikipedia link for the car)
 
-    If there is no car, return all details as "n/a".
+        If there is no car, return all details as "n/a".
 
-	Please ensure the response is formatted as a JSON object with the following keys: make, model, year, rarity, link"""
+        Please ensure the response is formatted as a JSON object with the following keys: make, model, year, rarity, link
+    """
 
-    # Generate response using Gemini
+    # Generate response with Gemini
     response = model.generate_content([prompt, image])
 
     try:
@@ -179,50 +210,49 @@ async def predict(file: UploadFile = File(...)):
         
         parsed_response = json.loads(response_text)
         
-        # Return the parsed details as a dictionary
-        return {
+        # Return the parsed details
+        car = {
             "make": parsed_response.get("make"),
             "model": parsed_response.get("model"),
             "year": parsed_response.get("year"),
             "rarity": parsed_response.get("rarity"),
             "link": parsed_response.get("link")
         }
-        
+        return {"success": True, "car": car}
     except json.JSONDecodeError as e:
-        # Handle JSON parsing errors
-        return {"error": "Failed to parse response as JSON", "response_text": response.text}
+        return {"success": False, "error": "Failed to parse response as JSON", "response_text": response.text}
     except Exception as e:
-        # Handle other exceptions
-        return {"error": str(e)}
+        return {"success": False, "error": str(e)}
 
 
 @app.post("/save-car/")
-async def save_car(car_data: CarData):
+async def save_car(car_data: CarData) -> dict[str, any]:
+    """
+    Save a car's data to the DynamoDB cars table.
+
+    Args:
+        car_data (CarData): The car data to save.
+    
+    Returns:
+        A JSON indicating whether the save was successful with the key "success".
+    """
+
     try:
-        # Add timestamp if not provided
-        if not car_data.savedAt:
-            car_data.savedAt = datetime.now().isoformat()
-            
-        # Check if the image URL is already an S3 URL from our bucket
+        # Check if S3 already contains the image
         is_s3_url = S3_BUCKET_NAME in car_data.imageUrl if car_data.imageUrl else False
         
-        # Process the image unless it's already in S3
-        if not is_s3_url:
-            # Extract user ID for later use
-            user_id = car_data.userId
-            
+        # Process and upload the image to S3 if not already in
+        if not is_s3_url:            
+            # Process the image
             if car_data.imageUrl.startswith('data:image'):
                 # Parse data URL
-                image_format, image_str = car_data.imageUrl.split(';base64,')
+                _, image_str = car_data.imageUrl.split(';base64,')
                 image_data = base64.b64decode(image_str)
             elif car_data.imageUrl.startswith('blob:'):
                 # Blob URLs can't be processed server-side
-                raise HTTPException(
-                    status_code=400, 
-                    detail="Blob URLs cannot be processed. The frontend should convert blob URLs to data URLs."
-                )
+                raise HTTPException(status_code=400, detail="Blob URLs cannot be processed. The frontend should convert blob URLs to data URLs.")
             elif car_data.imageUrl.startswith(('http://', 'https://')):
-                # For external URLs, fetch the image
+                # Fetch the image for external URLs
                 try:
                     response = requests.get(car_data.imageUrl, timeout=10)
                     if response.status_code != 200:
@@ -232,33 +262,26 @@ async def save_car(car_data: CarData):
                     raise HTTPException(status_code=400, detail=f"Error fetching image: {str(e)}")
             else:
                 # Invalid image source
-                raise HTTPException(
-                    status_code=400, 
-                    detail="Invalid image source. Please provide a data URL or a valid image URL."
-                )
+                raise HTTPException(status_code=400, detail="Invalid image source. Please provide a data URL or a valid image URL.")
             
-            # Generate hash for unique filename
-            image_hash = generate_image_hash(image_data)
-            
-            # Upload to S3
-            s3_url = await upload_to_s3(image_data, user_id, image_hash)
-            car_data.imageUrl = s3_url
+            # Upload image to S3
+            car_data.imageUrl = await upload_to_s3(image_data, car_data.userId, generate_image_hash(image_data))
         else:
-            # If it's already an S3 URL, extract the hash from the URL for consistency
+            # Extract the hash from the URL for consistency if already in S3
             image_hash = car_data.imageUrl.split('/')[-1].split('.')[0]
         
-        # Save to DynamoDB
+        # Save to DynamoDB with savedAt as the sort key and imageHash for unique identification
         item = {
             'username': car_data.username,
             'userId': car_data.userId,
-            'savedAt': car_data.savedAt,  # Use as sort key
+            'savedAt': car_data.savedAt,
             'make': car_data.carInfo.make,
             'model': car_data.carInfo.model,
             'year': car_data.carInfo.year,
             'link': car_data.carInfo.link,
             'imageUrl': car_data.imageUrl,
-            'imageHash': image_hash,  # Store hash for unique identification
-            'isPrivate': car_data.isPrivate  # Store privacy setting
+            'imageHash': image_hash,
+            'isPrivate': car_data.isPrivate
         }
         
         # Add description if provided
@@ -270,24 +293,80 @@ async def save_car(car_data: CarData):
         return {"success": True, "message": "Car data saved successfully"}
     except HTTPException as e:
         # Re-raise HTTP exceptions
-        print(f"HTTP error: {e.detail}")
         raise
     except Exception as e:
-        print("error", str(e))
+        return {"success": False, "error": str(e)}
+
+
+@app.delete("/delete-car/{user_id}/{saved_at}")
+async def delete_car(user_id: str, saved_at: str) -> dict[str, any]:
+    """
+    Delete a car post from the database.
+
+    Args:
+        user_id (str): The Cognito user id of the poster.
+        saved_at (str): The timestamp of the car post.
+
+    Returns:
+        A JSON object indicating whether the deletion was successful with the key "success".
+    """
+
+    try:
+        # Delete the item from DynamoDB
+        response = cars_table.delete_item(
+            Key={
+                'userId': user_id,
+                'savedAt': saved_at
+            },
+            ReturnValues="ALL_OLD"
+        )
+        
+        # Check if the item was deleted successfully
+        deleted_item = response.get('Attributes')
+        if not deleted_item:
+            return {"success": False, "error": "Car not found"}
+        
+        # Get the image URL from the deleted item to delete from S3
+        image_url = deleted_item.get('imageUrl')
+        if image_url and S3_BUCKET_NAME in image_url:
+            try:
+                # Extract the S3 key from the URL
+                s3_key = image_url.split(f"{S3_BUCKET_NAME}.s3.{aws_region}.amazonaws.com/")[1]
+                
+                # Delete the image from S3
+                s3_client.delete_object(
+                    Bucket=S3_BUCKET_NAME,
+                    Key=s3_key
+                )
+            except Exception as s3_error:
+                print(f"Warning: Could not delete S3 image: {str(s3_error)}")
+                # Continue with the process even if S3 deletion fails
+        
+        return {"success": True, "message": "Car deleted successfully"}
+    except Exception as e:
         return {"success": False, "error": str(e)}
 
 
 @app.get("/get-user-cars/{user_id}")
-async def get_user_cars(user_id: str):
-    """Get all cars saved by a specific user"""
+async def get_user_cars(user_id: str) -> dict[str, any]:
+    """
+    Retrieve the cars saved by a specific user.
+    
+    Args:
+        user_id (str): THe Cognito user id of the requester.
+        
+    Returns:
+        A JSON object containing a list of CarData for all of the user's saved cars with the key "cars" if "success" is True.
+    """
+
     try:
-        # Query DynamoDB for user's saved cars
+        # Query DynamoDB for user's saved cars (newest first)
         response = cars_table.query(
             KeyConditionExpression='userId = :uid',
             ExpressionAttributeValues={
                 ':uid': user_id
             },
-            ScanIndexForward=False  # Sort by savedAt in descending order (newest first)
+            ScanIndexForward=False
         )
         
         # Format the response
@@ -315,13 +394,21 @@ async def get_user_cars(user_id: str):
         
         return {"success": True, "cars": cars}
     except Exception as e:
-        print(f"Error retrieving user cars: {str(e)}")
         return {"success": False, "error": str(e)}
 
 
 @app.get("/get-all-cars")
-async def get_all_cars():
-    """Get all public cars with user information for the explore page"""
+async def get_all_cars() -> dict[str, any]:
+    """
+    Retrieve all public car posts along with user information.
+    
+    Args:
+        None.
+    
+    Returns:
+        A JSON object containing a list of CarData for all of the public car posts with the key "cars" if "success" is True.
+    """
+
     try:
         # Scan DynamoDB for all car entries
         response = cars_table.scan()
@@ -363,32 +450,44 @@ async def get_all_cars():
         
         # Sort by savedAt in descending order (newest first)
         cars.sort(key=lambda x: x['savedAt'], reverse=True)
-        
+
         return {"success": True, "cars": cars}
     except Exception as e:
-        print(f"Error retrieving all cars: {str(e)}")
         return {"success": False, "error": str(e)}
 
 
-@app.post("/like-car/{car_owner_id}/{saved_at}/{liker_id}")
-async def like_car(car_owner_id: str, saved_at: str, liker_id: str):
-    """Like a car post, ensuring one like per user per post"""
+@app.post("/like-car/{poster_id}/{saved_at}/{liker_id}")
+async def like_car(poster_id: str, saved_at: str, liker_id: str) -> dict[str, any]:
+    """
+    Add a like to a post (maximum one like per user per post).
+
+    Args:
+        poster_id (str): The Cognito user id of the poster.
+        saved_at (str): The timestamp of the car post.
+        liker_id (str): The Cognito user id of the liker.
+
+    Returns:
+        A JSON object indicating whether the like was successful with the key "success" and the updated likes count with the key "likes" if "success" is True.
+    """
+
     try:
         # First get the car details
         car_response = cars_table.get_item(
             Key={
-                'userId': car_owner_id,
+                'userId': poster_id,
                 'savedAt': saved_at
             }
         )
         
+        # Car does not exist
         if 'Item' not in car_response:
             return {"success": False, "error": "Car not found"}
             
+        # Get existing likes list or empty list if none
         car = car_response['Item']
-        liked_by = car.get('likedBy', [])  # Get existing likes list or empty list if none
+        liked_by = car.get('likedBy', [])
 
-        # Check if user has already liked this post
+        # Check if user has already liked the post
         if liker_id in liked_by:
             return {"success": False, "error": "User has already liked this post"}
 
@@ -396,7 +495,7 @@ async def like_car(car_owner_id: str, saved_at: str, liker_id: str):
         liked_by.append(liker_id)
         response = cars_table.update_item(
             Key={
-                'userId': car_owner_id,
+                'userId': poster_id,
                 'savedAt': saved_at
             },
             UpdateExpression="SET likedBy = :liked_by, likes = if_not_exists(likes, :zero) + :inc",
@@ -408,93 +507,44 @@ async def like_car(car_owner_id: str, saved_at: str, liker_id: str):
             ReturnValues="UPDATED_NEW"
         )
         
-        # Get the updated likes count
+        # Get and return the updated likes count
         updated_likes = response.get('Attributes', {}).get('likes', 0)
         
         return {"success": True, "likes": updated_likes}
     except Exception as e:
-        print(f"Error liking car: {str(e)}")
         return {"success": False, "error": str(e)}
 
 
-@app.delete("/delete-car/{user_id}/{saved_at}")
-async def delete_car(user_id: str, saved_at: str):
-    """Delete a specific car entry for a user"""
-    try:
-        # Delete the item from DynamoDB
-        response = cars_table.delete_item(
-            Key={
-                'userId': user_id,
-                'savedAt': saved_at
-            },
-            ReturnValues="ALL_OLD"  # Return the deleted item
-        )
+@app.post("/unlike-car/{poster_id}/{saved_at}/{liker_id}")
+async def unlike_car(poster_id: str, saved_at: str, liker_id: str) -> dict[str, any]:
+    """
+    Remove a like from a post.
+    
+    Args:
+        poster_id (str): The Cognito user id of the poster.
+        saved_at (str): The timestamp of the car post.
+        liker_id (str): The Cognito user id of the liker.
         
-        # Check if the item was deleted successfully
-        deleted_item = response.get('Attributes')
-        if not deleted_item:
-            return {"success": False, "error": "Car not found"}
-        
-        # Get the image URL from the deleted item to delete from S3 as well
-        image_url = deleted_item.get('imageUrl')
-        if image_url and S3_BUCKET_NAME in image_url:
-            try:
-                # Extract the S3 key from the URL
-                s3_key = image_url.split(f"{S3_BUCKET_NAME}.s3.{aws_region}.amazonaws.com/")[1]
-                
-                # Delete the image from S3
-                s3_client.delete_object(
-                    Bucket=S3_BUCKET_NAME,
-                    Key=s3_key
-                )
-            except Exception as s3_error:
-                print(f"Warning: Could not delete S3 image: {str(s3_error)}")
-                # Continue with the process even if S3 deletion fails
-        
-        return {"success": True, "message": "Car deleted successfully"}
-    except Exception as e:
-        print(f"Error deleting car: {str(e)}")
-        return {"success": False, "error": str(e)}
-
-
-@app.get("/get-user-likes/{user_id}")
-async def get_user_likes(user_id: str):
-    """Get all posts that a user has liked"""
-    try:
-        # Query the likes table for all likes by this user
-        response = likes_table.query(
-            KeyConditionExpression='userId = :uid',
-            ExpressionAttributeValues={
-                ':uid': user_id
-            }
-        )
-        
-        # Extract the carIds from the likes
-        liked_posts = [item['carId'] for item in response.get('Items', [])]
-        
-        return {"success": True, "likedPosts": liked_posts}
-    except Exception as e:
-        print(f"Error getting user likes: {str(e)}")
-        return {"success": False, "error": str(e)}
-
-
-@app.post("/unlike-car/{car_owner_id}/{saved_at}/{liker_id}")
-async def unlike_car(car_owner_id: str, saved_at: str, liker_id: str):
-    """Unlike a car post"""
+    Returns:
+        A JSON object indicating whether the unlike was successful with the key "success" and the updated likes count with the key "likes" if "success" is True.
+    """
+    
     try:
         # First get the car details
         car_response = cars_table.get_item(
             Key={
-                'userId': car_owner_id,
+                'userId': poster_id,
                 'savedAt': saved_at
             }
         )
         
+        # Car does not exist
         if 'Item' not in car_response:
             return {"success": False, "error": "Car not found"}
             
+        # Get existing likes list or empty list if none
         car = car_response['Item']
-        liked_by = car.get('likedBy', [])  # Get existing likes list or empty list if none
+        liked_by = car.get('likedBy', [])
 
         # Check if user has liked this post
         if liker_id not in liked_by:
@@ -504,7 +554,7 @@ async def unlike_car(car_owner_id: str, saved_at: str, liker_id: str):
         liked_by.remove(liker_id)
         response = cars_table.update_item(
             Key={
-                'userId': car_owner_id,
+                'userId': poster_id,
                 'savedAt': saved_at
             },
             UpdateExpression="SET likedBy = :liked_by, likes = if_not_exists(likes, :zero) - :dec",
@@ -516,20 +566,79 @@ async def unlike_car(car_owner_id: str, saved_at: str, liker_id: str):
             ReturnValues="UPDATED_NEW"
         )
         
-        # Get the updated likes count
+        # Get and return the updated likes count
         updated_likes = response.get('Attributes', {}).get('likes', 0)
         
         return {"success": True, "likes": updated_likes}
     except Exception as e:
-        print(f"Error unliking car: {str(e)}")
+        return {"success": False, "error": str(e)}
+
+
+@app.post("/create-user")
+async def create_user(user_data: UserInfo) -> dict[str, any]:
+    """
+    Create a new user entry in the users table (Cognito user id and username).
+    
+    Args:
+        user_data (UserInfo): The user data to save.
+
+    Returns:
+        A JSON object indicating whether the user creation was successful with the key "success".
+    """
+
+    try:
+        # Add the user to the users table
+        users_table.put_item(
+            Item={
+                'userId': user_data.user_id,
+                'username': user_data.username,
+            }
+        )
+        return {"success": True}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+@app.post("/update-username")
+async def update_username(new_user_data: UserInfo) -> dict[str, any]:
+    """
+    Update a user's username in the users table.
+    
+    Args:
+        new_user_data (UserInfo): The user data containing the updated username.
+        
+    Returns:
+        A JSON object indicating whether the update was successful with the key "success".
+    """
+
+    try:
+        # Update the user's username in the users table
+        users_table.update_item(
+            Key={'userId': new_user_data.user_id},
+            UpdateExpression='SET username = :username',
+            ExpressionAttributeValues={
+                ':username': new_user_data.new_username,
+            }
+        )
+        return {"success": True}
+    except Exception as e:
         return {"success": False, "error": str(e)}
 
 
 @app.post("/get-current-usernames")
-async def get_current_usernames(user_ids: list[str]):
-    """Get current usernames for a list of user IDs from the users table"""
+async def get_current_usernames(user_ids: list[str]) -> dict[str, any]:
+    """
+    Get the current usernames for a list of Cognito user ids from the users table.
+
+    Args:
+        user_ids (list[str]): A list of Cognito user ids.
+
+    Returns:
+        A JSON object containing the current usernames for the provided user ids (dict with user id key) with the key "usernames" if "success" is True.
+    """
+
     try:
-        # Get current usernames from users table
+        # Get current username for each Cognito user id from users table
         usernames = {}
         for user_id in user_ids:
             try:
@@ -542,102 +651,92 @@ async def get_current_usernames(user_ids: list[str]):
                 else:
                     usernames[user_id] = None
             except Exception as e:
-                print(f"Error getting username for user {user_id}: {str(e)}")
                 usernames[user_id] = None
         
-        print(usernames)
         return {"success": True, "usernames": usernames}
     except Exception as e:
-        print(f"Error getting current usernames: {str(e)}")
         return {"success": False, "error": str(e)}
-
-
-@app.post("/create-user")
-async def create_user(user_data: UserCreate):
-    """Create a new user entry in the users table"""
-    try:
-        users_table.put_item(
-            Item={
-                'userId': user_data.user_id,
-                'username': user_data.username,
-            }
-        )
-        return {"success": True}
-    except Exception as e:
-        print(f"Error creating user: {str(e)}")
-        return {"success": False, "error": str(e)}
-
-
-@app.post("/update-username")
-async def update_username(update_data: UsernameUpdate):
-    """Update a user's username in the users table"""
-    try:
-        users_table.update_item(
-            Key={'userId': update_data.user_id},
-            UpdateExpression='SET username = :username',
-            ExpressionAttributeValues={
-                ':username': update_data.new_username,
-            }
-        )
-        return {"success": True}
-    except Exception as e:
-        print(f"Error updating username: {str(e)}")
-        return {"success": False, "error": str(e)}
-
+    
 
 @app.post("/upload-profile-photo/{user_id}")
-async def upload_profile_photo(user_id: str, file: UploadFile = File(...)):
-    """Upload a profile photo to S3 and update the user's record"""
+async def upload_profile_photo(user_id: str, file: UploadFile = File) -> dict[str, any]:
+    """
+    Upload a profile photo to S3 and update the user's data to reference the new photo.
+    
+    Args:
+        user_id (str): The Cognito user id of the uploader.
+        file (UploadFile): The image file to upload.
 
-    pil_image, image_data = preprocess_image(file)
-    s3_url = await upload_to_s3(image_data, user_id, generate_image_hash(image_data))
+    Returns:
+        A JSON object indicating whether the upload was successful with the key "success" and the new photo URL with the key "photo_url" if "success" is True.
+    """
 
-    user_response = users_table.get_item(
-        Key={'userId': user_id}
-    )
+    try:
+        # Retrieve the user's data from the users table
+        user_response = users_table.get_item(
+            Key={'userId': user_id}
+        )
 
-    if 'Item' in user_response:
-        old_url = user_response['Item'].get('profilePhoto', '')
-        if old_url:
-            old_key = old_url.split(f"{S3_BUCKET_NAME}.s3.{aws_region}.amazonaws.com/")[1]
-            try:
+        # Check if user exists
+        if 'Item' in user_response:
+            # Delete the old profile photo from S3 if it exists
+            old_url = user_response['Item'].get('profilePhoto', '')
+            if old_url:
+                old_key = old_url.split(f"{S3_BUCKET_NAME}.s3.{aws_region}.amazonaws.com/")[1]
+
                 s3_client.delete_object(
                     Bucket=S3_BUCKET_NAME,
                     Key=old_key
                 )
-            except Exception as e:
-                print(f"Error deleting old photo: {str(e)}")
 
-    users_table.update_item(
-        Key={'userId': user_id},
-        UpdateExpression='SET profilePhoto = :photo_url',
-        ExpressionAttributeValues={
-            ':photo_url': s3_url
-        }
-    )
+            # Process and upload the new image to S3
+            _, image_data = process_image(file)
+            s3_url = await upload_to_s3(image_data, user_id, generate_image_hash(image_data))
 
-    return {"success": True, "photo_url": s3_url}
+            # Update the user's profile photo URL in the users table
+            users_table.update_item(
+                Key={'userId': user_id},
+                UpdateExpression='SET profilePhoto = :photo_url',
+                ExpressionAttributeValues={
+                    ':photo_url': s3_url
+                }
+            )
+
+            return {"success": True, "photo_url": s3_url}
+        else:
+            return {"success": False, "error": "User not found"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 
 @app.post("/get-profile-photos")
-async def get_profile_photos(user_ids: List[str]):
-    """Get profile photo URLs for a list of user IDs"""
+async def get_profile_photos(user_ids: List[str]) -> dict[str, any]:
+    """
+    Get the current profile photo S3 urls for a list of Cognito user ids from the users table.
+    
+    Args:
+        user_ids (list[str]): A list of Cognito user ids.
+        
+    Returns:
+        A JSON object containing the current profile photo URLs for the provided user ids (dict with user id key) with the key "photos" if "success" is True.
+    """
+
     try:
+        # Get current profile photo for each Cognito user id from users table
         photos = {}
         for user_id in user_ids:
             try:
                 response = users_table.get_item(
                     Key={'userId': user_id}
                 )
+                # Get the profile photo from the user item
                 if 'Item' in response:
                     photos[user_id] = response['Item'].get('profilePhoto', '')
                 else:
                     photos[user_id] = ''
             except Exception as e:
-                print(f"Error getting profile photo for user {user_id}: {str(e)}")
                 photos[user_id] = ''
         
         return {"success": True, "photos": photos}
     except Exception as e:
-        print(f"Error getting profile photos: {str(e)}")
         return {"success": False, "error": str(e)}
