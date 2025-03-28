@@ -11,7 +11,7 @@ import boto3
 import hashlib
 import base64
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 import requests
 
 # Load environment variables
@@ -168,7 +168,7 @@ async def upload_to_s3(image_data, user_id, image_hash) -> str:
 
 
 @app.post("/predict/")
-async def predict(image: UploadFile) -> dict[str, any]:
+async def predict(image: UploadFile) -> Dict[str, Any]:
     """
     Identify the car in an image with Gemini.
 
@@ -226,7 +226,7 @@ async def predict(image: UploadFile) -> dict[str, any]:
 
 
 @app.post("/save-car/")
-async def save_car(car_data: CarData) -> dict[str, any]:
+async def save_car(car_data: CarData) -> Dict[str, Any]:
     """
     Save a car's data to the DynamoDB cars table.
 
@@ -299,7 +299,7 @@ async def save_car(car_data: CarData) -> dict[str, any]:
 
 
 @app.delete("/delete-car/{user_id}/{saved_at}")
-async def delete_car(user_id: str, saved_at: str) -> dict[str, any]:
+async def delete_car(user_id: str, saved_at: str) -> Dict[str, Any]:
     """
     Delete a car post from the database.
 
@@ -348,7 +348,7 @@ async def delete_car(user_id: str, saved_at: str) -> dict[str, any]:
 
 
 @app.get("/get-user-cars/{user_id}")
-async def get_user_cars(user_id: str) -> dict[str, any]:
+async def get_user_cars(user_id: str) -> Dict[str, Any]:
     """
     Retrieve the cars saved by a specific user.
     
@@ -398,7 +398,7 @@ async def get_user_cars(user_id: str) -> dict[str, any]:
 
 
 @app.get("/get-all-cars")
-async def get_all_cars() -> dict[str, any]:
+async def get_all_cars() -> Dict[str, Any]:
     """
     Retrieve all public car posts along with user information.
     
@@ -457,7 +457,7 @@ async def get_all_cars() -> dict[str, any]:
 
 
 @app.post("/like-car/{poster_id}/{saved_at}/{liker_id}")
-async def like_car(poster_id: str, saved_at: str, liker_id: str) -> dict[str, any]:
+async def like_car(poster_id: str, saved_at: str, liker_id: str) -> Dict[str, Any]:
     """
     Add a like to a post (maximum one like per user per post).
 
@@ -516,7 +516,7 @@ async def like_car(poster_id: str, saved_at: str, liker_id: str) -> dict[str, an
 
 
 @app.post("/unlike-car/{poster_id}/{saved_at}/{liker_id}")
-async def unlike_car(poster_id: str, saved_at: str, liker_id: str) -> dict[str, any]:
+async def unlike_car(poster_id: str, saved_at: str, liker_id: str) -> Dict[str, Any]:
     """
     Remove a like from a post.
     
@@ -575,7 +575,7 @@ async def unlike_car(poster_id: str, saved_at: str, liker_id: str) -> dict[str, 
 
 
 @app.post("/create-user")
-async def create_user(user_data: UserInfo) -> dict[str, any]:
+async def create_user(user_data: UserInfo) -> Dict[str, Any]:
     """
     Create a new user entry in the users table (Cognito user id and username).
     
@@ -600,7 +600,7 @@ async def create_user(user_data: UserInfo) -> dict[str, any]:
 
 
 @app.post("/update-username")
-async def update_username(new_user_data: UserInfo) -> dict[str, any]:
+async def update_username(new_user_data: UserInfo) -> Dict[str, Any]:
     """
     Update a user's username in the users table.
     
@@ -626,7 +626,7 @@ async def update_username(new_user_data: UserInfo) -> dict[str, any]:
 
 
 @app.post("/get-current-usernames")
-async def get_current_usernames(user_ids: list[str]) -> dict[str, any]:
+async def get_current_usernames(user_ids: list[str]) -> Dict[str, Any]:
     """
     Get the current usernames for a list of Cognito user ids from the users table.
 
@@ -659,7 +659,7 @@ async def get_current_usernames(user_ids: list[str]) -> dict[str, any]:
     
 
 @app.post("/upload-profile-photo/{user_id}")
-async def upload_profile_photo(user_id: str, file: UploadFile = File) -> dict[str, any]:
+async def upload_profile_photo(user_id: str, file: UploadFile = File) -> Dict[str, Any]:
     """
     Upload a profile photo to S3 and update the user's data to reference the new photo.
     
@@ -710,7 +710,7 @@ async def upload_profile_photo(user_id: str, file: UploadFile = File) -> dict[st
 
 
 @app.post("/get-profile-photos")
-async def get_profile_photos(user_ids: List[str]) -> dict[str, any]:
+async def get_profile_photos(user_ids: List[str]) -> Dict[str, Any]:
     """
     Get the current profile photo S3 urls for a list of Cognito user ids from the users table.
     
