@@ -3,12 +3,12 @@
 import { ReactNode, useEffect, useState, useCallback, createContext, useContext } from 'react';
 import { Authenticator } from '@aws-amplify/ui-react';
 import '@aws-amplify/ui-react/styles.css';
-import { getCurrentUser, signOut, fetchUserAttributes } from 'aws-amplify/auth';
+import { getCurrentUser, signOut, AuthUser } from 'aws-amplify/auth';
 import AmplifyInitializer from '../components/AmplifyInitializer';
 
 // Context for authentication
 interface AuthContextType {
-  user: any | null;
+  user: AuthUser | null;
   isLoading: boolean;
   signOut: () => Promise<void>;
   refreshAuthState: () => Promise<void>;
@@ -25,7 +25,7 @@ const AuthContext = createContext<AuthContextType>({
 export const useAuth = () => useContext(AuthContext);
 
 export default function AmplifyProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<any | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // Check if user is authenticated and update state
@@ -33,14 +33,8 @@ export default function AmplifyProvider({ children }: { children: ReactNode }) {
     try {
       const currentUser = await getCurrentUser();
       setUser(currentUser);
-      
-      // Fetch attributes if we have a user
-      try {
-        const attributes = await fetchUserAttributes();
-      } catch (attrError) {
-        console.error('Error fetching attributes', attrError);
-      }
     } catch (error) {
+      console.error("error:", error);
       setUser(null);
     } finally {
       setIsLoading(false);

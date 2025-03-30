@@ -1,14 +1,14 @@
 "use client";
 
 import Image from "next/image";
-import { useState, useEffect, useRef, useCallback, RefObject, Dispatch, SetStateAction, ReactNode } from "react";
+import { useState, useEffect, useRef, useCallback, RefObject, Dispatch, SetStateAction } from "react";
 import axios from "axios";
 import placeholderImg from "@/public/images/placeholder.png";
 import CarInfo from "./CarInfo";
 import { StatCard } from "./Cards";
 import { useAuth } from '../providers/AmplifyProvider';
 import AuthModals from './AuthModals';
-import DescriptionModal from './SaveSettingsModal';
+import SaveSettingsModal from './SaveSettingsModal';
 import { fetchUserAttributes } from 'aws-amplify/auth';
 
 type Car = {
@@ -33,7 +33,6 @@ const HomeContent = () => {
   const [statCardsVisible, setStatCardsVisible] = useState<boolean>(false);
   const [imageVisible, setImageVisible] = useState<boolean>(false);
   const [carInfoVisible, setCarInfoVisible] = useState<boolean>(false);
-  const [featureCardsVisible, setFeatureCardsVisible] = useState<boolean>(false);
 
   const [isLoginOpen, setIsLoginOpen] = useState<boolean>(false);
   const [isSignupOpen, setIsSignupOpen] = useState<boolean>(false);
@@ -49,7 +48,6 @@ const HomeContent = () => {
   const statCardsRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLDivElement>(null);
   const carInfoRef = useRef<HTMLDivElement>(null);
-  const featureCardsRef = useRef<HTMLDivElement>(null);
   
   const [isDragging, setIsDragging] = useState<boolean>(false);
   
@@ -81,8 +79,8 @@ const HomeContent = () => {
     }, delay);
   };
   
+  // Observer setup for animations
   useEffect(() => {
-    // Observer setup for animations
     const createObserver = (ref: RefObject<HTMLDivElement | null>, setVisible: Dispatch<SetStateAction<boolean>>) => {
       if (!ref.current) return null;
       
@@ -91,11 +89,10 @@ const HomeContent = () => {
           entries.forEach(entry => {
             if (entry.isIntersecting) {
               setVisible(true);
-              observer.disconnect(); // Stop observing once visible
+              observer.disconnect();
             }
           });
         },
-        { threshold: 0.0 } // Trigger when 10% of the element is visible
       );
       
       observer.observe(ref.current);
@@ -107,11 +104,9 @@ const HomeContent = () => {
     const statCardsObserver = createObserver(statCardsRef, setStatCardsVisible);
     const imageObserver = createObserver(imageRef, setImageVisible);
     const carInfoObserver = createObserver(carInfoRef, setCarInfoVisible);
-    const featureCardsObserver = createObserver(featureCardsRef, setFeatureCardsVisible);
 
     // Cleanup
     return () => {
-      if (featureCardsObserver) featureCardsObserver.disconnect();
       if (imageObserver) imageObserver.disconnect();
       if (carInfoObserver) carInfoObserver.disconnect();
       if (headerObserver) headerObserver.disconnect();
@@ -151,32 +146,32 @@ const HomeContent = () => {
 
     const objectUrl = URL.createObjectURL(processedFile);
     const formData = new FormData();
-    formData.append("file", processedFile);
+    formData.append("image", processedFile);
 
     setLoading(true);
     setImageTransitioning(true);
 
     try {
-      // Reset saved state for new image
       setIsSaved(false);
-      
       setImage(objectUrl);
       setDisplayImage(true);
       setFadeKey(fadeKey + 1);
 
-      // Scroll to the image with header adjustment
+      // Scroll to the image with header adjustment (center image in non-header space)
       scrollToElementWithHeaderAdjustment(imageRef, 100);
 
-      // Use the same host as the frontend but with the backend port
       const backendUrl = `http://${window.location.hostname}:8000/predict/`;
-      const result = await axios.post(backendUrl, formData, {
+      const response = await axios.post(backendUrl, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      const { make, model, year, rarity, link } = result.data;
-      
-      // Update car info with a smooth transition
-      setCar({make: make, model: model, year: year, rarity: rarity || "n/a", link: link});
+      if (response.data.success) {
+        // Update car info
+        const { make, model, year, rarity, link } = response.data.car;
+        setCar({make: make, model: model, year: year, rarity: rarity, link: link});
+      } else {
+        return;
+      }
       
       // Allow time for the car info to update before ending transition
       setTimeout(() => {
@@ -222,7 +217,7 @@ const HomeContent = () => {
     if (user) {
       setIsPrivacyDialogOpen(true);
     } else {
-      // If not logged in, display login modal and save afterwards.
+      // If not logged in, display login modal and save afterwards
       setShouldSaveAfterLogin(true);
       setIsLoginOpen(true);
     }
@@ -249,11 +244,11 @@ const HomeContent = () => {
       const userId = user.userId;
       let imageUrl = image;
       
-      // Get the user's preferred username using fetchUserAttributes
-      let username = 'Anonymous';
+      // Get the user's username
+      let username = '';
       try {
         const attributes = await fetchUserAttributes();
-        username = attributes.preferred_username || user.username || 'Anonymous';
+        username = attributes.preferred_username || user.username;
       } catch (error) {
         console.error('Error fetching user attributes:', error);
         username = user.username || 'Anonymous';
@@ -288,7 +283,7 @@ const HomeContent = () => {
           year: car.year,
           link: car.link,
         },
-        imageUrl: imageUrl, // Send the processed image URL
+        imageUrl: imageUrl,
         savedAt: new Date().toISOString(),
         isPrivate: carPrivacy,
         description: carDescription.trim() || undefined
@@ -314,14 +309,14 @@ const HomeContent = () => {
       alert("An error occurred while saving the car. Please try again.");
       setIsSaving(false);
     }
-  }, [user, car, shouldSaveAfterLogin, carPrivacy, carDescription]);
+  }, [user, car, image, carPrivacy, carDescription]);
 
   // Reset saved state when a new image is uploaded
   useEffect(() => {
     setIsSaved(false);
   }, [image]);
 
-  // Listen for changes in authentication state
+  // Listen for changes in auth state
   useEffect(() => {
     // If user becomes authenticated and we have a pending save request
     if (user && shouldSaveAfterLogin) {
@@ -347,6 +342,8 @@ const HomeContent = () => {
     setCarDescription(description);
   };
 
+
+  // Drag and drop handlers
   const handleDragEnter = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -411,6 +408,7 @@ const HomeContent = () => {
     processImage(file);
   };
 
+
   return (
     <>
       <div
@@ -454,7 +452,7 @@ const HomeContent = () => {
           {/* Left half */}
           <div 
             ref={imageRef} 
-            className={`flex flex-col flex-1 items-center justify-center relative md:border-r-[0.25px] border-gray-600/50 gap-8 p-4 py-8 lg:px-16 relative transition-all duration-700 ease-out max-w-full overflow-x-hidden ${ imageVisible  ? 'opacity-100 transform translate-x-0' : 'opacity-0 transform -translate-x-10' }`}
+            className={`flex flex-col flex-1 items-center justify-center relative md:border-r-[0.25px] border-gray-700/60 gap-8 p-4 py-8 lg:px-16 relative transition-all duration-700 ease-out max-w-full overflow-x-hidden ${ imageVisible  ? 'opacity-100 transform translate-x-0' : 'opacity-0 transform -translate-x-10' }`}
           >
             {/* Image preview */}
             <label htmlFor="file-input" className="pt-2 lg:pt-0 cursor-pointer transform hover:scale-[1.01] transition-all duration-300 ease-in-out">
@@ -467,7 +465,7 @@ const HomeContent = () => {
                   width={300}
                   height={450}
                   style={{ objectFit: "contain" }}
-                  className={`rounded-2xl border border-gray-900 bg-gray-950/80 shadow-md shadow-blue-300/10 transition-all duration-500 ease-in-out ${imageTransitioning ? 'opacity-70 scale-[0.98]' : 'opacity-100 scale-100'}`}
+                  className={`rounded-2xl border border-gray-700/80 bg-gray-950/80 shadow-md shadow-blue-300/10 transition-all duration-500 ease-in-out ${imageTransitioning ? 'opacity-70 scale-[0.98]' : 'opacity-100 scale-100'}`}
                 />
               </div>
             </label>
@@ -529,11 +527,6 @@ const HomeContent = () => {
           </div>
         </div>
 
-        {/* Feature cards */}
-        {/* <div ref={featureCardsRef}>
-          <HomeFeatureCards visible={featureCardsVisible} />
-        </div> */}
-
         {/* Footnote */}
         <div className="flex flex-col text-[0.6rem] lg:text-[0.7rem] text-gray-700 mt-6 text-center max-w-2xl gap-1">
           <p><sup className="relative bottom-[0.3em]">†</sup> Predictions may vary based on image quality, lighting conditions, viewing angle, and model rarity. Accuracy was determined with clear, well-lit photos of vehicles from standard viewing angles.</p>
@@ -541,8 +534,8 @@ const HomeContent = () => {
         </div>
       </div>
 
-      {/* Description Modal */}
-      <DescriptionModal 
+      {/* Save Settings Modal */}
+      <SaveSettingsModal 
         isOpen={isPrivacyDialogOpen}
         isPrivate={carPrivacy}
         description={carDescription}

@@ -10,17 +10,20 @@ interface AuthPromptProps {
   className?: string;
 }
 
+// Component with a title and a button underneath to prompt users to log in
 const AuthPrompt = ({ title, buttonText = "Log in" }: AuthPromptProps) => {
   const [isLoginOpen, setIsLoginOpen] = useState<boolean>(false);
   const [isSignupOpen, setIsSignupOpen] = useState<boolean>(false);
   const { refreshAuthState } = useAuth();
 
+  // Close the modals
   const handleCloseModals = (): void => {
     refreshAuthState();
     setIsLoginOpen(false);
     setIsSignupOpen(false);
   };
 
+  // Handlers to switch between signup/login modals
   const handleSwitchToSignup = (): void => {
     setIsLoginOpen(false);
     setIsSignupOpen(true);

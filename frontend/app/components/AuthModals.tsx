@@ -5,6 +5,13 @@ import { useState, useEffect } from 'react';
 import { signIn, signUp, confirmSignUp, resetPassword, confirmResetPassword } from 'aws-amplify/auth';
 import axios from 'axios';
 
+// Add AWS Amplify error types
+type AuthError = {
+  name: string;
+  message: string;
+  code?: string;
+};
+
 interface AuthModalsProps {
   isLoginOpen: boolean;
   isSignupOpen: boolean;
@@ -33,6 +40,8 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
 
   // Handle animation when opening/closing the modal
   useEffect(() => {
+    setError('');
+    setSuccessMessage('');
     if (isLoginOpen || isSignupOpen) {
       setIsVisible(true);
       setIsClosing(false);
@@ -49,6 +58,7 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
     };
   }, [isLoginOpen, isSignupOpen]);
 
+  // Close modal with animation
   const handleCloseWithAnimation = () => {
     setIsClosing(true);
     // Wait for animation to complete before actually closing
@@ -59,9 +69,10 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
       setShowConfirmation(false);
       setShowForgotPassword(false);
       setShowResetPasswordConfirmation(false);
-    }, 300); // Match this with the animation duration
+    }, 300);
   };
 
+  // Handler for logging in
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -70,7 +81,6 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
     
     try {
       await signIn({ username, password });
-      // Set a success message but don't close immediately to allow user to see it
       setSuccessMessage('Login successful! Redirecting...');
       // Call onAuthSuccess if provided
       if (onAuthSuccess) {
@@ -80,19 +90,22 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
       setTimeout(() => {
         handleCloseWithAnimation();
       }, 1000);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Login error:', error);
-      if (error.name === 'UserNotConfirmedException') {
+      const authError = error as AuthError;
+      if (authError.name === 'UserNotConfirmedException') {
         setError('Please confirm your account first. Check your email for a confirmation code.');
         setShowConfirmation(true);
       } else {
-        setError(error.message || 'Failed to sign in');
+        setError(authError.message || 'Failed to sign in');
       }
     } finally {
       setIsProcessing(false);
     }
   };
 
+
+  // Handlers for signing up
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -112,7 +125,7 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
         }
       });
 
-      // Create user entry in our database
+      // Create user entry in the database
       const hostname = window.location.hostname;
       const backendUrl = `http://${hostname}:8000/create-user`;
       await axios.post(backendUrl, {
@@ -122,9 +135,10 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
 
       setShowConfirmation(true);
       setSuccessMessage('Please check your email for a confirmation code.');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Signup error:', error);
-      setError(error.message || 'Failed to sign up');
+      const authError = error as AuthError;
+      setError(authError.message || 'Failed to sign up');
     } finally {
       setIsProcessing(false);
     }
@@ -145,7 +159,6 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
       // Try to sign in automatically after confirmation
       try {
         await signIn({ username, password });
-        // Set a success message but don't close immediately to allow user to see it
         setSuccessMessage('Successfully signed in! Redirecting...');
         // Call onAuthSuccess if provided
         if (onAuthSuccess) {
@@ -155,19 +168,21 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
         setTimeout(() => {
           handleCloseWithAnimation();
         }, 1000);
-      } catch (signInError: any) {
+      } catch (signInError: unknown) {
         console.error('Auto sign-in after confirmation failed:', signInError);
         setShowConfirmation(false);
         setSuccessMessage('Account confirmed. Please sign in now.');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Confirmation error:', error);
-      setError(error.message || 'Failed to confirm sign up');
+      const authError = error as AuthError;
+      setError(authError.message || 'Failed to confirm sign up');
     } finally {
       setIsProcessing(false);
     }
   };
-
+  
+  // Handles for forgot password and reset password
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -179,9 +194,10 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
       setShowResetPasswordConfirmation(true);
       setShowForgotPassword(false);
       setSuccessMessage('Password reset code sent to your email.');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Forgot password error:', error);
-      setError(error.message || 'Failed to initiate password reset');
+      const authError = error as AuthError;
+      setError(authError.message || 'Failed to initiate password reset');
     } finally {
       setIsProcessing(false);
     }
@@ -201,14 +217,16 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
       });
       setShowResetPasswordConfirmation(false);
       setSuccessMessage('Password has been reset successfully. You can now log in with your new password.');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Reset password confirmation error:', error);
-      setError(error.message || 'Failed to reset password');
+      const authError = error as AuthError;
+      setError(authError.message || 'Failed to reset password');
     } finally {
       setIsProcessing(false);
     }
   };
 
+  // Handlers to switch between different modals
   const switchToSignup = () => {
     setError('');
     setSuccessMessage('');
@@ -276,6 +294,7 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
           />
         </div>
 
+        {/* Title */}
         <div className="mb-6">
           <h2 className="text-xl font-semibold text-white text-center w-full">
             {showConfirmation ? 'Confirm Your Account' : 
@@ -285,18 +304,21 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
           </h2>
         </div>
 
+        {/* Error message */}
         {error && (
           <div className="bg-red-500/20 border border-red-500/50 text-red-200 p-3 rounded-xl mb-4 fade-in text-sm">
             {error}
           </div>
         )}
 
+        {/* Success message */}
         {successMessage && (
           <div className="bg-green-500/20 border border-green-500/50 text-green-200 p-3 rounded-xl mb-4 fade-in text-sm">
             {successMessage}
           </div>
         )}
 
+        {/* Login modal */}
         {isLoginOpen && !showConfirmation && !showForgotPassword && !showResetPasswordConfirmation && (
           <>
             <form onSubmit={handleLogin} className="space-y-4 fade-in">
@@ -364,6 +386,7 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
           </>
         )}
 
+        {/* Signup modal */}
         {isSignupOpen && !showConfirmation && (
           <>
             <form onSubmit={handleSignup} className="space-y-4 fade-in">
@@ -435,6 +458,7 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
           </>
         )}
 
+        {/* Forgot password modal */}
         {showForgotPassword && (
           <>
             <form onSubmit={handleForgotPassword} className="space-y-4 fade-in">
@@ -475,6 +499,7 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
           </>
         )}
 
+        {/* Reset password confirmation modal */}
         {showResetPasswordConfirmation && (
           <>
             <form onSubmit={handleResetPasswordConfirmation} className="space-y-4 fade-in">
@@ -530,6 +555,7 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
           </>
         )}
 
+        {/* Normal confirmation modal (after signing up) */}
         {showConfirmation && (
           <form onSubmit={handleConfirmSignup} className="space-y-4 fade-in">
             <div>
@@ -559,4 +585,4 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
       </div>
     </div>
   );
-} 
+}

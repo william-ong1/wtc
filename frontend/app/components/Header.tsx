@@ -7,12 +7,10 @@ import { usePathname } from 'next/navigation';
 import { useAuth } from '../providers/AmplifyProvider';
 import AuthModals from './AuthModals';
 import { fetchUserAttributes } from 'aws-amplify/auth';
-import { profile } from "console";
 
 interface NavLinkProps {
   label: string;
   link?: string;
-  onClick?: () => void;
 }
 
 const Header = () => {
@@ -25,13 +23,13 @@ const Header = () => {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState<boolean>(false);
   const { user, isLoading, signOut, refreshAuthState } = useAuth();
 
+  // Retrieve user info and update states accordingly
   useEffect(() => {
     const getUserInfo = async (): Promise<void> => {
       if (user) {
         try {
-          // Only fetch attributes if we have a user
+          // Fetch and store attributes if we have a user
           const attributes = await fetchUserAttributes();
-          // Use preferred_username if available, otherwise use the username from user object
           setUsername(attributes.preferred_username || "");
           setProfilePicture(attributes.picture || "");
         } catch (error) {
@@ -39,6 +37,7 @@ const Header = () => {
         }
       } else {
         setUsername(null);
+        setProfilePicture(null);
       }
       
       // Mark auth as ready once we've processed the user state
@@ -51,25 +50,17 @@ const Header = () => {
     }
   }, [user, isLoading]);
 
-  // Close menu when clicking outside
+  // Handle clicks outside of menus/dropdowns to close them
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
+      
+      // Close mobile menu if clicking outside
       if (isMenuOpen && !target.closest('#mobile-menu') && !target.closest('#hamburger-button')) {
         setIsMenuOpen(false);
       }
-    };
-
-    document.addEventListener('click', handleClickOutside);
-    return () => {
-      document.removeEventListener('click', handleClickOutside);
-    };
-  }, [isMenuOpen]);
-
-  // Close profile menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
+      
+      // Close profile menu if clicking outside
       if (isProfileMenuOpen && !target.closest('#profile-menu') && !target.closest('#profile-button')) {
         setIsProfileMenuOpen(false);
       }
@@ -79,8 +70,10 @@ const Header = () => {
     return () => {
       document.removeEventListener('click', handleClickOutside);
     };
-  }, [isProfileMenuOpen]);
+  }, [isMenuOpen, isProfileMenuOpen]);
 
+
+  // Handlers for auth buttons
   const handleLoginClick = (): void => {
     setIsLoginOpen(true);
     setIsSignupOpen(false);
@@ -96,12 +89,21 @@ const Header = () => {
   };
 
   const handleCloseModals = (): void => {
-    // Close the modals first
     setIsLoginOpen(false);
     setIsSignupOpen(false);
     document.body.style.overflow = 'unset';
   };
 
+  const handleAuthSuccess = (): void => {
+    setAuthReady(false);
+    // Small delay for smooth transition
+    setTimeout(() => {
+      refreshAuthState();
+    }, 100);
+  };
+
+
+  // Handlers to allow switches between signup and login modals
   const handleSwitchToSignup = (): void => {
     setIsLoginOpen(false);
     setIsSignupOpen(true);
@@ -112,22 +114,22 @@ const Header = () => {
     setIsLoginOpen(true);
   };
 
+
+  // Handler to sign user out
   const handleSignOut = async (): Promise<void> => {
     try {
-      // Set authReady to false during sign out to prevent UI flashing
       setAuthReady(false);
       await signOut();
-      // Refresh auth state after signing out
       await refreshAuthState();
-      // Auth is ready again
       setAuthReady(true);
-      setIsMenuOpen(false);
     } catch (error) {
       console.error('Error signing out:', error);
-      setAuthReady(true); // Ensure we set authReady back to true even if there's an error
+      setAuthReady(true);
     }
   };
 
+
+  // Toggle open/close menus/dropdowns
   const toggleMenu = (): void => {
     setIsMenuOpen(!isMenuOpen);
   };
@@ -136,27 +138,16 @@ const Header = () => {
     setIsProfileMenuOpen(!isProfileMenuOpen);
   };
 
-  const handleAuthSuccess = (): void => {
-    setAuthReady(false);
-    // Small delay to allow for smooth transition
-    setTimeout(() => {
-      refreshAuthState();
-    }, 300);
-  };
 
-  const NavLink = ({ label, link, onClick }: NavLinkProps) => {
+  // Component for a navigation Link with an animated underline on hover or full underline when active
+  const NavLink = ({ label, link }: NavLinkProps) => {
     const pathname = usePathname();
-    const isActive = label.toLowerCase() === "home" 
-      ? pathname === "/" 
-      : pathname === `/${label.toLowerCase()}`;
+    const isActive = label.toLowerCase() === "home" ? pathname === "/" : pathname === `/${label.toLowerCase()}`;
     
     return (
       <Link 
         href={link ? (link.startsWith('/') ? link : `/${link}`) : (`/${label.toLowerCase() === "home" ? "" : label.toLowerCase()}`)} 
-        className={`px-3 py-2 text-sm font-medium relative group ${
-          isActive ? 'text-white' : 'text-gray-300 hover:text-white'
-        }`}
-        onClick={onClick}
+        className={`px-3 py-2 text-sm font-medium relative group ${ isActive ? 'text-white' : 'text-gray-300 hover:text-white' }`}
       >
         <span className="relative inline-block">
           {label}
@@ -170,11 +161,12 @@ const Header = () => {
     );
   };
 
+  // Fixed header with centered nav links for desktop and dropdown for smaller devices
   return (
     <>
       <div id="header" className="fixed top-0 z-[100] w-full px-5 lg:px-3 py-1 lg:py-2 lg:pt-3">
         
-        {/* Background with blur effect */}
+        {/* Black header with blur effect */}
         <div className="absolute inset-0 backdrop-blur-md bg-black/80"></div>
         
         <div className="relative flex items-center justify-between h-full max-w-full">
@@ -190,9 +182,9 @@ const Header = () => {
                   height={100}
                   className="relative w-8 h-8 cursor-pointer p-0.5 mb-1 transition-all duration-300 ease-in-out transform hover:scale-105"
                 />
-
               </Link>
             </div>
+            
             <div className="hidden lg:flex items-center mt-0.25">
               What's That Car?
             </div>
@@ -221,6 +213,7 @@ const Header = () => {
                         className="relative h-10 w-10 rounded-full overflow-hidden border border-gray-700/50 shadow-lg shadow-black/20 hover:shadow-md hover:shadow-black/30 transition-all duration-200 ease-in-out transform hover:scale-105"
                         aria-label="Open profile menu"
                       >
+                        {/* Display profile picture if it exists, otherwise the first letter of user's username */}
                         {profilePicture ? (
                           <Image 
                             src={profilePicture} 
@@ -230,7 +223,7 @@ const Header = () => {
                             className="object-cover"
                           />
                         ) : (
-                          <div className="w-full h-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center text-gray-300 font-bold">
+                          <div className="w-full h-full bg-custom-blue/70 flex items-center justify-center text-sm text-white font-bold">
                             {username[0].toUpperCase()}
                           </div>
                         )}
@@ -244,8 +237,8 @@ const Header = () => {
                         <div className={`p-4 flex flex-col gap-4 transition-all duration-300 ease-in-out ${isProfileMenuOpen ? 'opacity-100 translate-y-0 delay-100' : 'opacity-0 -translate-y-4'}`}>
                           
                           <div className="flex flex-col items-left justify-left gap-2 border-b border-gray-900 pb-4">
-                            <NavLink label="Saved" link="/profile/saved" onClick={() => setIsProfileMenuOpen(false)} />
-                            <NavLink label="Profile" link="/profile" onClick={() => setIsProfileMenuOpen(false)} />
+                            <NavLink label="Saved" link="/profile/saved" />
+                            <NavLink label="Profile" link="/profile" />
                           </div>
                           
                           <div className="pt-2">
@@ -275,7 +268,7 @@ const Header = () => {
             </div>
           </div>
 
-          {/* Hamburger menu button - mobile */}
+          {/* Hamburger menu button - mobile or smaller screens */}
           <button 
             id="hamburger-button"
             className="pl-3 lg:hidden flex flex-col justify-center items-center w-10 h-10 transition-all duration-300 ease-in-out fade-in"
@@ -296,27 +289,25 @@ const Header = () => {
       >
         <div className={`p-4 flex flex-col gap-4 transition-all duration-500 ease-in-out ${isMenuOpen ? 'opacity-100 translate-y-0 delay-100' : 'opacity-0 -translate-y-4'}`}>
 
+          {/* Nav buttons */}
           <div className="flex flex-col gap-2 border-b border-blue-500/20 pb-4">
-            <NavLink label="Home" onClick={() => setIsMenuOpen(false)} />
-            <NavLink label="Explore" onClick={() => setIsMenuOpen(false)} />
-            <NavLink label="About" onClick={() => setIsMenuOpen(false)} />
-            {!isLoading && authReady && username && (<NavLink label="Saved" link="/profile/saved" onClick={() => setIsMenuOpen(false)} /> )}
-            {!isLoading && authReady && username && (<NavLink label="Profile" link="/profile" onClick={() => setIsMenuOpen(false)} /> )}
+            <NavLink label="Home" />
+            <NavLink label="Explore" />
+            <NavLink label="About" />
+            {!isLoading && authReady && username && (<NavLink label="Saved" link="/profile/saved" /> )}
+            {!isLoading && authReady && username && (<NavLink label="Profile" link="/profile" /> )}
           </div>
           
-          <div className="flex flex-col gap-3 pt-2">
-            {/* Skeleton loader while auth is loading */}
-            {(!isLoading && authReady) ? (
-              username ? (
-                <>
-                  <button 
-                    onClick={handleSignOut}
-                    className="px-4 py-2 text-sm font-medium border border-blue-500/20 hover:border-blue-500/40 rounded-xl bg-white/5 hover:bg-blue-900/20 text-white transition-all duration-300 ease-in-out"
-                  >
-                    Sign out
-                  </button>
-                </>
-              ) : (
+          {/* Auth buttons */}
+          <div className="flex flex-col gap-3 pt-2 transition-all duration-300 ease-in-out">
+            {(!isLoading && authReady && username) ? 
+                <button 
+                  onClick={handleSignOut}
+                  className="px-4 py-2 text-sm font-medium border border-blue-500/20 hover:border-blue-500/40 rounded-xl bg-white/5 hover:bg-blue-900/20 text-white transition-all duration-300 ease-in-out"
+                >
+                  Sign out
+                </button>
+              :
                 <>
                   <button 
                     onClick={handleLoginClick}
@@ -331,10 +322,7 @@ const Header = () => {
                     Sign up
                   </button>
                 </>
-              )
-            ) : (
-              <div> </div>
-            )}
+            } 
           </div>
         </div>
       </div>

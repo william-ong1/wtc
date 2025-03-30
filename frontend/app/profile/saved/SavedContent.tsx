@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import axios from "axios";
 import { useAuth } from '@/app/providers/AmplifyProvider';
 import AuthPrompt from '@/app/components/AuthPrompt';
@@ -95,7 +96,7 @@ const CarCard: React.FC<CarCardProps> = ({ car, onDelete }) => {
                 backgroundColor: isPortraitImage ? "transparent" : "rgba(3, 7, 18, 0.9)"
               }}
               className={`transition-all duration-500 border-b border-t border-gray-900 ${imageLoading ? 'opacity-0' : 'opacity-100'}`}
-              onError={(e) => {
+              onError={() => {
                 console.error(`Error loading image for ${make} ${model}:`, car.imageUrl);
                 setImageError(true);
                 setImageLoading(false);
@@ -247,112 +248,106 @@ const SavedContent: React.FC = () => {
   // Loading state
   if (isLoading || loading) {
     return (
-      <>
-        <title> Saved Cars | What's That Car? </title>
-        <div className="flex flex-col flex-1 items-center justify-center w-full h-full py-20 gap-8 fade-in">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-custom-blue"></div>
-        </div>
-      </>
+      <div className="flex flex-col flex-1 items-center justify-center w-full h-full py-20 gap-8 fade-in">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-custom-blue"></div>
+      </div>
     );
   }
 
   // User not logged in
   if (!user) {
     return (
-      <>
-        <title> Saved Cars | What's That Car? </title>
-        <AuthPrompt title="Log in to View Saved Cars" />
-      </>
+      <AuthPrompt title="Log in to View Saved Cars" />
     );
   }
 
   return (
-    <>
-      <title> Saved Cars | What's That Car? </title>
-      <div className="flex flex-col flex-1 w-full max-w-5xl px-6 py-4 mb-8 lg:py-8 fade-in">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-          <h1 className="text-2xl font-bold text-custom-blue mb-3 md:mb-0 text-left"> Saved Cars </h1>
-          
-          <div className="flex items-center self-start md:self-auto">
-            <span className="text-gray-400 text-sm mr-2">Sort by</span>
+    <div className="flex flex-col flex-1 w-full max-w-5xl px-6 py-4 mb-8 lg:py-8 fade-in">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+      <div className="relative mb-6 md:mb-0 ">
+          <h1 className="text-2xl font-bold text-custom-blue mb-0 md:mb-0 text-left"> Saved Cars </h1>
+          <div className="absolute -bottom-2 left-0 w-20 h-0.5 bg-gradient-to-r from-custom-blue to-custom-blue/30 rounded-full"></div>
+        </div>
+        
+        <div className="flex items-center self-start md:self-auto">
+          <span className="text-gray-400 text-sm mr-2">Sort by</span>
 
-            {/* Dropdown */}
-            <div className="relative inline-block" ref={dropdownRef}>
-              <button 
-                onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="flex items-center justify-between text-sm min-w-[140px] border border-gray-800 text-white py-2 px-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 hover:border-custom-blue/30  hover:bg-blue-950/20 hover:shadow-sm hover:shadow-blue-500/10 transition-all duration-200"
+          {/* Dropdown */}
+          <div className="relative inline-block" ref={dropdownRef}>
+            <button 
+              onClick={() => setDropdownOpen(!dropdownOpen)}
+              className="flex items-center justify-between text-sm min-w-[140px] border border-gray-800 text-white py-2 px-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 hover:border-custom-blue/30  hover:bg-blue-950/20 hover:shadow-sm hover:shadow-blue-500/10 transition-all duration-200"
+            >
+              <span className="flex items-center">
+                {sortOption === 'newest' && (
+                  <Image src="/icons/sort-newest.svg" alt="Newest first" width={16} height={16} className="mr-2" />
+                )}
+                {sortOption === 'oldest' && (
+                  <Image src="/icons/sort-oldest.svg" alt="Oldest first" width={16} height={16} className="mr-2" />
+                )}
+                {sortOption === 'newest' && 'Newest First'}
+                {sortOption === 'oldest' && 'Oldest First'}
+              </span>
+              <Image src="/icons/chevron-down.svg" alt="Toggle dropdown" width={16} height={16} className={`ml-2 transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
+            
+            <div 
+              className={`absolute right-0 mt-2 z-50 bg-gray-950/95 backdrop-blur-md border-[0.25px] border-blue-500/20 shadow-lg shadow-blue-500/10 rounded-xl overflow-hidden transition-all duration-300 ease-in-out w-full
+                ${dropdownOpen ? 'max-h-[500px] opacity-100 translate-y-0' : 'max-h-0 opacity-0 -translate-y-4 pointer-events-none'}`}
+            >
+              <div className={`flex flex-col transition-all duration-300 ease-in-out
+                ${dropdownOpen ? 'opacity-100 translate-y-0 delay-100' : 'opacity-0 -translate-y-4'}`}
               >
-                <span className="flex items-center">
-                  {sortOption === 'newest' && (
-                    <Image src="/icons/sort-newest.svg" alt="Newest first" width={16} height={16} className="mr-2" />
-                  )}
-                  {sortOption === 'oldest' && (
-                    <Image src="/icons/sort-oldest.svg" alt="Oldest first" width={16} height={16} className="mr-2" />
-                  )}
-                  {sortOption === 'newest' && 'Newest First'}
-                  {sortOption === 'oldest' && 'Oldest First'}
-                </span>
-                <Image src="/icons/chevron-down.svg" alt="Toggle dropdown" width={16} height={16} className={`ml-2 transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''}`} />
-              </button>
-              
-              <div 
-                className={`absolute right-0 mt-2 z-50 bg-gray-950/95 backdrop-blur-md border-[0.25px] border-blue-500/20 shadow-lg shadow-blue-500/10 rounded-xl overflow-hidden transition-all duration-300 ease-in-out w-full
-                  ${dropdownOpen ? 'max-h-[500px] opacity-100 translate-y-0' : 'max-h-0 opacity-0 -translate-y-4 pointer-events-none'}`}
-              >
-                <div className={`flex flex-col transition-all duration-300 ease-in-out
-                  ${dropdownOpen ? 'opacity-100 translate-y-0 delay-100' : 'opacity-0 -translate-y-4'}`}
+                <button 
+                  onClick={() => handleSortChange('newest')}
+                  className={`w-full text-left px-4 py-2.5 hover:bg-blue-950/30 transition-colors text-sm flex items-center ${sortOption === 'newest' ? 'bg-blue-950/40 text-white' : 'text-white'}`}
                 >
-                  <button 
-                    onClick={() => handleSortChange('newest')}
-                    className={`w-full text-left px-4 py-2.5 hover:bg-blue-950/30 transition-colors text-sm flex items-center ${sortOption === 'newest' ? 'bg-blue-950/40 text-white' : 'text-white'}`}
-                  >
-                    <Image src="/icons/sort-newest.svg" alt="Newest first" width={16} height={16} className="mr-2" />
-                    Newest First
-                  </button>
-                  <button 
-                    onClick={() => handleSortChange('oldest')}
-                    className={`w-full text-left px-4 py-2.5 hover:bg-blue-950/30 transition-colors text-sm flex items-center ${sortOption === 'oldest' ? 'bg-blue-950/40 text-white' : 'text-white'}`}
-                  >
-                    <Image src="/icons/sort-oldest.svg" alt="Oldest first" width={16} height={16} className="mr-2" />
-                    Oldest First
-                  </button>
-                </div>
+                  <Image src="/icons/sort-newest.svg" alt="Newest first" width={16} height={16} className="mr-2" />
+                  Newest First
+                </button>
+                <button 
+                  onClick={() => handleSortChange('oldest')}
+                  className={`w-full text-left px-4 py-2.5 hover:bg-blue-950/30 transition-colors text-sm flex items-center ${sortOption === 'oldest' ? 'bg-blue-950/40 text-white' : 'text-white'}`}
+                >
+                  <Image src="/icons/sort-oldest.svg" alt="Oldest first" width={16} height={16} className="mr-2" />
+                  Oldest First
+                </button>
               </div>
             </div>
           </div>
         </div>
-        
-        {/* Display cars if they exist, otherwise a message of no cars */}
-        {sortedCars.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-8 pt-4">
-            {sortedCars.map((car, index) => (
-              <div key={`${car.savedAt}-${index}`} className="flex flex-col">
-                <CarCard 
-                  key={`${car.savedAt}-${index}`} 
-                  car={car} 
-                  onDelete={deleteCar}
-                />
-
-                {/* Divider on small screens and not for the last item */}
-                {index < sortedCars.length - 1 && (
-                  <div className="mt-6 mb-2 flex justify-center items-center md:hidden">
-                    <div className="h-px w-full bg-gradient-to-r from-transparent via-gray-600/80 to-transparent"></div>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        ) : (
-          // Button to go back home
-          <div className="text-center py-20 fade-in">
-            <p className="text-gray-400 mb-6"> You haven't saved any cars yet. </p>
-            <a href="/" className="px-6 py-3 rounded-2xl text-white text-base font-semibold bg-primary-blue hover:bg-primary-blue-hover transition-all duration-300 ease-in-out transform hover:scale-105 shadow-lg hover:shadow-blue-500/20">
-              Identify a Car
-            </a>
-          </div>
-        )}
       </div>
-    </>
+      
+      {/* Display cars if they exist, otherwise a message of no cars */}
+      {sortedCars.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-8 pt-4">
+          {sortedCars.map((car, index) => (
+            <div key={`${car.savedAt}-${index}`} className="flex flex-col">
+              <CarCard 
+                key={`${car.savedAt}-${index}`} 
+                car={car} 
+                onDelete={deleteCar}
+              />
+
+              {/* Divider on small screens and not for the last item */}
+              {index < sortedCars.length - 1 && (
+                <div className="mt-6 mb-2 flex justify-center items-center md:hidden">
+                  <div className="h-px w-full bg-gradient-to-r from-transparent via-gray-600/80 to-transparent"></div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      ) : (
+        // Button to go back home
+        <div className="text-center py-20 fade-in">
+          <p className="text-gray-400 mb-6"> You haven't saved any cars yet. </p>
+          <Link href="/" className="px-6 py-3 rounded-2xl text-white text-base font-semibold bg-primary-blue hover:bg-primary-blue-hover transition-all duration-300 ease-in-out transform hover:scale-105 shadow-lg hover:shadow-blue-500/20">
+            Identify a Car
+          </Link>
+        </div>
+      )}
+    </div>
   );
 };
 

@@ -1,6 +1,4 @@
 import type { Config } from "tailwindcss";
-import { heroui } from "@heroui/react";
-import { b } from "framer-motion/client";
 
 const defaultTheme = require('tailwindcss/defaultTheme');
 
@@ -24,16 +22,6 @@ export default {
       fontFamily: {
         montserrat: ['"Montserrat"', ...defaultTheme.fontFamily.sans],
       },
-      keyframes: {
-        fadeIn: {
-          '0%': { opacity: '0', transform: 'translateY(10px)' },
-          '100%': { opacity: '1', transform: 'translateY(0)' },
-        },
-      },
-      animation: {
-        fadeIn: 'fadeIn 0.5s ease-out forwards',
-      },
     },
   },
-  plugins: [heroui()],
 } satisfies Config;

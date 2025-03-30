@@ -2,6 +2,10 @@ import Header from "@/app/components/Header";
 import Footer from "@/app/components/Footer";
 import SavedContent from "./SavedContent";
 
+export const metadata = {
+  title: "Saved Cars | What's That Car",
+};
+
 export default function Saved() {
   return (
     <div className="flex flex-col min-h-[100dvh] font-montserrat">

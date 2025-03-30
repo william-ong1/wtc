@@ -2,6 +2,10 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import ExploreContent from "./ExploreContent";
 
+export const metadata = {
+  title: "Explore | What's That Car",
+};
+
 export default function Explore() {
   return (
     <div className="flex flex-col min-h-[100dvh] font-montserrat">

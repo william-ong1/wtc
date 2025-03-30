@@ -2,6 +2,10 @@ import Header from "@/app/components/Header";
 import Footer from "@/app/components/Footer";
 import ProfileContent from "./ProfileContent";
 
+export const metadata = {
+  title: "Profile | What's That Car",
+};
+
 export default function Profile() {
   return (
     <div className="flex flex-col min-h-[100dvh] font-montserrat">

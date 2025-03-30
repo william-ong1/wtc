@@ -1,16 +1,15 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import type { FC } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
 import axios from "axios";
 import { useAuth } from '@/app/providers/AmplifyProvider';
 import AuthModals from '@/app/components/AuthModals';
 
-// Define SortOption type
+// Sort options
 type SortOption = 'newest' | 'oldest' | 'mostLiked';
 
-// Define car type
+// Car info
 type Car = {
   userId: string;
   savedAt: string;
@@ -26,8 +25,8 @@ type Car = {
   username: string;
   profilePicture: string;
   description?: string;
-  
 };
+
 type CarCardProps = {
   car: Car;
   onLike: (userId: string, savedAt: string) => void;
@@ -37,19 +36,20 @@ type CarCardProps = {
   profilePhotos: Record<string, string>;
 };
 
-const CarCard: FC<CarCardProps> = ({ car, onLike, onUnlike, hasLiked = false, currentUsernames, profilePhotos }: CarCardProps) => {
+const CarCard = ({ car, onLike, onUnlike, hasLiked = false, currentUsernames, profilePhotos }: CarCardProps) => {
   const make = car.carInfo.make;
   const model = car.carInfo.model;
   const year = car.carInfo.year;
   const currentUsername = currentUsernames[car.userId] || car.username;
+  const savedDate = new Date(car.savedAt).toLocaleDateString('en-US', {  year: 'numeric',  month: 'short',  day: 'numeric' });
 
   const [imageError, setImageError] = useState<boolean>(false);
   const [isLiking, setIsLiking] = useState<boolean>(false);
   const [imageLoading, setImageLoading] = useState<boolean>(true);
   const [isPortraitImage, setIsPortraitImage] = useState<boolean>(false);
   const [showDescription, setShowDescription] = useState<boolean>(false);
-  const savedDate = new Date(car.savedAt).toLocaleDateString('en-US', {  year: 'numeric',  month: 'short',  day: 'numeric' });
 
+  // Like a car post
   const handleLikeClick = (): void => {
     if (isLiking) return;
     setIsLiking(true);
@@ -61,10 +61,9 @@ const CarCard: FC<CarCardProps> = ({ car, onLike, onUnlike, hasLiked = false, cu
     setTimeout(() => setIsLiking(false), 1000);
   };
 
+  // Loads an image and checks if it's portrait or landscape
   const handleImageLoad = (event: React.SyntheticEvent<HTMLImageElement>): void => {
     setImageLoading(false);
-    
-    // Check if the image is portrait (typically phone photos) by comparing width and height
     const img = event.target as HTMLImageElement;
     const isPortrait = img.naturalHeight > img.naturalWidth;
     setIsPortraitImage(isPortrait);
@@ -72,9 +71,9 @@ const CarCard: FC<CarCardProps> = ({ car, onLike, onUnlike, hasLiked = false, cu
 
   return (
     <div className="bg-gray-950/90 rounded-xl overflow-hidden shadow-md transition-all duration-300 border border-gray-900 hover:scale-[1.01] fade-in">
-      {/* User info */}
       <div className="flex items-center gap-2 p-3">
         <div className="relative h-8 w-8 rounded-full overflow-hidden">
+          {/* Profile photo */}
           {profilePhotos[car.userId] ? (
             <Image
               src={profilePhotos[car.userId]}
@@ -84,16 +83,20 @@ const CarCard: FC<CarCardProps> = ({ car, onLike, onUnlike, hasLiked = false, cu
               style={{ objectFit: "cover" }}
             />
           ) : (
-            <div className="w-full h-full bg-blue-500 flex items-center justify-center text-xs text-white font-bold">
+            // Letter avatar if profile photo not available
+            <div className="w-full h-full bg-custom-blue/70 flex items-center justify-center text-xs text-white font-bold">
               {currentUsername.charAt(0).toUpperCase()}
             </div>
           )}
         </div>
+
+        {/* Post info */}
         <div className="flex flex-col text-left">
           <span className="text-sm font-medium text-white">{currentUsername || 'Unknown User'}</span>
           <p className="text-xs text-gray-500"> Posted on {savedDate} </p>
         </div>
 
+        {/* Like button */}
         <div className="flex-1"></div>
         <button
           onClick={handleLikeClick}
@@ -114,10 +117,10 @@ const CarCard: FC<CarCardProps> = ({ car, onLike, onUnlike, hasLiked = false, cu
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
             </svg>
           )}
+
           <span className="text-xs font-medium text-pink-400">{car.likes || 0}</span>
         </button>
       </div>
-      
       
       {/* Car image */}
       <div className="relative h-80 w-full bg-gray-900">
@@ -132,6 +135,7 @@ const CarCard: FC<CarCardProps> = ({ car, onLike, onUnlike, hasLiked = false, cu
                 <div className="animate-spin rounded-full h-4 w-4"></div>
               </div>
             )}
+
             <Image
               src={car.imageUrl}
               alt={`${make} ${model}`}
@@ -146,8 +150,9 @@ const CarCard: FC<CarCardProps> = ({ car, onLike, onUnlike, hasLiked = false, cu
               onLoad={handleImageLoad}
             />
 
+            {/* Year in bottom right of image */}
             <div className="absolute bottom-2 right-3 z-20">
-              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-600/80 backdrop-blur-sm text-white border border-blue-500/30 shadow-lg shadow-blue-500/10">
+              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-600/80 backdrop-blur-sm text-white border border-blue-500/30 shadow-lg shadow-blue-500/10">
                 {year}
               </span>
             </div>
@@ -163,7 +168,8 @@ const CarCard: FC<CarCardProps> = ({ car, onLike, onUnlike, hasLiked = false, cu
 
         <div className="flex items-center gap-2">
           <p className="text-sm text-gray-400"> {make} · {year} </p>
-          <div className="flex-1"></div>
+
+          {/* Description buttons */}
           {car.description && (
             <button
               onClick={() => setShowDescription(!showDescription)}
@@ -204,9 +210,7 @@ const ExploreContent = () => {
   const [currentUsernames, setCurrentUsernames] = useState<Record<string, string>>({});
   const [profilePhotos, setProfilePhotos] = useState<Record<string, string>>({});
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const auth = useAuth();
-  const user = auth.user;
-  const refreshAuthState = auth.refreshAuthState;
+  const { user, refreshAuthState } = useAuth();
 
   // Handle click outside to close dropdown
   useEffect(() => {
@@ -222,8 +226,8 @@ const ExploreContent = () => {
     };
   }, []);
 
-  // Function to fetch current usernames
-  const fetchCurrentUsernames = async (userIds: string[]): Promise<void> => {
+  // Fetch current usernames for all car posters
+  const fetchCurrentUsernames = useCallback(async (userIds: string[]): Promise<void> => {
     try {
       const hostname = window.location.hostname;
       const backendUrl = `http://${hostname}:8000/get-current-usernames`;
@@ -237,10 +241,10 @@ const ExploreContent = () => {
     } catch (error) {
       console.error("Error fetching current usernames:", error);
     }
-  };
+  }, []);
 
-  // Function to fetch profile photos
-  const fetchProfilePhotos = async (userIds: string[]): Promise<void> => {
+  // Fetch profile photos for all car posts
+  const fetchProfilePhotos = useCallback(async (userIds: string[]): Promise<void> => {
     try {
       const hostname = window.location.hostname;
       const backendUrl = `http://${hostname}:8000/get-profile-photos`;
@@ -254,9 +258,10 @@ const ExploreContent = () => {
     } catch (error) {
       console.error("Error fetching profile photos:", error);
     }
-  };
+  }, []);
 
-  const fetchAllCars = async (): Promise<void> => {
+  // Fetch all car posts
+  const fetchAllCars = useCallback(async (): Promise<void> => {
     setLoading(true);
     try {
       const hostname = window.location.hostname;
@@ -279,8 +284,9 @@ const ExploreContent = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [fetchCurrentUsernames, fetchProfilePhotos]);
 
+  // Like a car post
   const likeCar = async (userId: string, savedAt: string): Promise<void> => {
     if (!user) {
       setIsLoginOpen(true);
@@ -313,6 +319,7 @@ const ExploreContent = () => {
     }
   };
 
+  // Unlike a car post
   const unlikeCar = async (userId: string, savedAt: string): Promise<void> => {
     if (!user) {
       setIsLoginOpen(true);
@@ -345,20 +352,23 @@ const ExploreContent = () => {
     }
   };
 
-  useEffect((): void => { fetchAllCars(); }, []);
+  // Fetch cars on component mount
+  useEffect((): void => { fetchAllCars(); }, [fetchAllCars]);
 
+  // Auth modal handlers
   const handleCloseModals = (): void => { refreshAuthState(); setIsLoginOpen(false); setIsSignupOpen(false); };
 
   const handleSwitchToSignup = (): void => { setIsLoginOpen(false); setIsSignupOpen(true); };
 
   const handleSwitchToLogin = (): void => { setIsSignupOpen(false); setIsLoginOpen(true); };
 
+  // Sort cars based on selected option
   const handleSortChange = (option: SortOption): void => {
     setSortOption(option);
     setDropdownOpen(false);
   };
 
-  // Sort cars based on selected option
+  // Sort types
   const sortedCars = [...cars].sort((a, b) => {
     switch (sortOption) {
       case 'newest':
@@ -373,104 +383,106 @@ const ExploreContent = () => {
   });
 
   return (
-    <>
-      <title> Explore | What's That Car? </title>
-      <div className="flex flex-col flex-1 w-full max-w-5xl px-6 py-4 mb-8 lg:py-8 fade-in">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-          <h1 className="text-2xl font-bold text-custom-blue mb-3 md:mb-0 text-left"> Explore Cars </h1>
+    <div className="flex flex-col flex-1 w-full max-w-5xl px-6 py-4 mb-8 lg:py-8 fade-in">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+        <div className="relative mb-6 md:mb-0 ">
+          <h1 className="text-2xl font-bold text-custom-blue mb-0 md:mb-0 text-left"> Explore Cars </h1>
+          <div className="absolute -bottom-2 left-0 w-20 h-0.5 bg-gradient-to-r from-custom-blue to-custom-blue/30 rounded-full"></div>
+        </div>
+        
+        <div className="flex items-center self-start md:self-auto">
+          <span className="text-gray-400 text-sm mr-2"> Sort by </span>
           
-          <div className="flex items-center self-start md:self-auto">
-            <span className="text-gray-400 text-sm mr-2">Sort by</span>
-            <div className="relative inline-block" ref={dropdownRef}>
-              <button 
-                onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="flex items-center justify-between text-sm min-w-[140px] border border-gray-800 text-white py-2 px-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 hover:border-custom-blue/30 hover:bg-blue-950/20 hover:shadow-sm hover:shadow-blue-500/10 transition-all duration-200"
+          {/* Dropdown */}
+          <div className="relative inline-block" ref={dropdownRef}>
+            <button 
+              onClick={() => setDropdownOpen(!dropdownOpen)}
+              className="flex items-center justify-between text-sm min-w-[140px] border border-gray-800 text-white py-2 px-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 hover:border-custom-blue/30 hover:bg-blue-950/20 hover:shadow-sm hover:shadow-blue-500/10 transition-all duration-200"
+            >
+              <span className="flex items-center">
+                {sortOption === 'newest' && ( <Image src="/icons/sort-newest.svg" alt="Newest first" width={16} height={16} className="mr-2" /> )}
+                {sortOption === 'oldest' && ( <Image src="/icons/sort-oldest.svg" alt="Oldest first" width={16} height={16} className="mr-2" /> )}
+                {sortOption === 'mostLiked' && ( <Image src="/icons/sort-most-liked.svg" alt="Most liked" width={16} height={16} className="mr-2" /> )}
+                {sortOption === 'newest' && 'Newest First'}
+                {sortOption === 'oldest' && 'Oldest First'}
+                {sortOption === 'mostLiked' && 'Most Liked'}
+              </span>
+              <Image src="/icons/chevron-down.svg" alt="Toggle dropdown" width={16} height={16} className={`ml-2 transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
+            
+            <div 
+              className={`absolute right-0 mt-2 z-50 bg-gray-950/95 backdrop-blur-md border-[0.25px] border-blue-500/20 shadow-lg shadow-blue-500/10 rounded-xl overflow-hidden transition-all duration-300 ease-in-out w-full
+                ${dropdownOpen ? 'max-h-[500px] opacity-100 translate-y-0' : 'max-h-0 opacity-0 -translate-y-4 pointer-events-none'}`}
+            >
+              <div className={`flex flex-col transition-all duration-300 ease-in-out
+                ${dropdownOpen ? 'opacity-100 translate-y-0 delay-100' : 'opacity-0 -translate-y-4'}`}
               >
-                <span className="flex items-center">
-                  {sortOption === 'newest' && ( <Image src="/icons/sort-newest.svg" alt="Newest first" width={16} height={16} className="mr-2" /> )}
-                  {sortOption === 'oldest' && ( <Image src="/icons/sort-oldest.svg" alt="Oldest first" width={16} height={16} className="mr-2" /> )}
-                  {sortOption === 'mostLiked' && ( <Image src="/icons/sort-most-liked.svg" alt="Most liked" width={16} height={16} className="mr-2" /> )}
-                  {sortOption === 'newest' && 'Newest First'}
-                  {sortOption === 'oldest' && 'Oldest First'}
-                  {sortOption === 'mostLiked' && 'Most Liked'}
-                </span>
-                <Image src="/icons/chevron-down.svg" alt="Toggle dropdown" width={16} height={16} className={`ml-2 transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''}`} />
-              </button>
-              
-              <div 
-                className={`absolute right-0 mt-2 z-50 bg-gray-950/95 backdrop-blur-md border-[0.25px] border-blue-500/20 shadow-lg shadow-blue-500/10 rounded-xl overflow-hidden transition-all duration-300 ease-in-out w-full
-                  ${dropdownOpen ? 'max-h-[500px] opacity-100 translate-y-0' : 'max-h-0 opacity-0 -translate-y-4 pointer-events-none'}`}
-              >
-                <div className={`flex flex-col transition-all duration-300 ease-in-out
-                  ${dropdownOpen ? 'opacity-100 translate-y-0 delay-100' : 'opacity-0 -translate-y-4'}`}
+                <button 
+                  onClick={() => handleSortChange('newest')}
+                  className={`w-full text-left px-4 py-2.5 hover:bg-blue-950/30 transition-colors text-sm flex items-center ${sortOption === 'newest' ? 'bg-blue-950/40 text-white' : 'text-white'}`}
                 >
-                  <button 
-                    onClick={() => handleSortChange('newest')}
-                    className={`w-full text-left px-4 py-2.5 hover:bg-blue-950/30 transition-colors text-sm flex items-center ${sortOption === 'newest' ? 'bg-blue-950/40 text-white' : 'text-white'}`}
-                  >
-                    <Image src="/icons/sort-newest.svg" alt="Newest first" width={16} height={16} className="mr-2" />
-                    Newest First
-                  </button>
-                  <button 
-                    onClick={() => handleSortChange('oldest')}
-                    className={`w-full text-left px-4 py-2.5 hover:bg-blue-950/30 transition-colors text-sm flex items-center ${sortOption === 'oldest' ? 'bg-blue-950/40 text-white' : 'text-white'}`}
-                  >
-                    <Image src="/icons/sort-oldest.svg" alt="Oldest first" width={16} height={16} className="mr-2" />
-                    Oldest First
-                  </button>
-                  <button 
-                    onClick={() => handleSortChange('mostLiked')}
-                    className={`w-full text-left px-4 py-2.5 hover:bg-blue-950/30 transition-colors text-sm flex items-center ${sortOption === 'mostLiked' ? 'bg-blue-950/40 text-white' : 'text-white'}`}
-                  >
-                    <Image src="/icons/sort-most-liked.svg" alt="Most liked" width={16} height={16} className="mr-2" />
-                    Most Liked
-                  </button>
-                </div>
+                  <Image src="/icons/sort-newest.svg" alt="Newest first" width={16} height={16} className="mr-2" />
+                  Newest First
+                </button>
+                <button 
+                  onClick={() => handleSortChange('oldest')}
+                  className={`w-full text-left px-4 py-2.5 hover:bg-blue-950/30 transition-colors text-sm flex items-center ${sortOption === 'oldest' ? 'bg-blue-950/40 text-white' : 'text-white'}`}
+                >
+                  <Image src="/icons/sort-oldest.svg" alt="Oldest first" width={16} height={16} className="mr-2" />
+                  Oldest First
+                </button>
+                <button 
+                  onClick={() => handleSortChange('mostLiked')}
+                  className={`w-full text-left px-4 py-2.5 hover:bg-blue-950/30 transition-colors text-sm flex items-center ${sortOption === 'mostLiked' ? 'bg-blue-950/40 text-white' : 'text-white'}`}
+                >
+                  <Image src="/icons/sort-most-liked.svg" alt="Most liked" width={16} height={16} className="mr-2" />
+                  Most Liked
+                </button>
               </div>
             </div>
           </div>
         </div>
-        
-        {loading ? (
-          <div className="flex justify-center items-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-custom-blue"></div>
-          </div>
-        ) : sortedCars.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-8 pt-4">
-            {sortedCars.map((car, index) => (
-              <div key={`${car.savedAt}-${index}`} className="flex flex-col">
-                <CarCard 
-                  car={car} 
-                  onLike={likeCar}
-                  onUnlike={unlikeCar}
-                  hasLiked={user ? (car.likedBy || []).includes(user.userId) : false}
-                  currentUsernames={currentUsernames}
-                  profilePhotos={profilePhotos}
-                />
-                {/* Add divider only on small screens and not for the last item */}
-                {index < sortedCars.length - 1 && (
-                  <div className="mt-6 mb-2 flex justify-center items-center md:hidden">
-                    <div className="h-px w-full bg-gradient-to-r from-transparent via-gray-600/80 to-transparent"></div>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-20 fade-in">
-            <p className="text-gray-400 mb-6"> No cars discovered. Be the first to share one! </p>
-          </div>
-        )}
-
-        <AuthModals 
-          isLoginOpen={isLoginOpen}
-          isSignupOpen={isSignupOpen}
-          onClose={handleCloseModals}
-          onSwitchToSignup={handleSwitchToSignup}
-          onSwitchToLogin={handleSwitchToLogin}
-        />
       </div>
-    </>
+      
+      {loading ? (
+        <div className="flex justify-center items-center py-20">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-custom-blue"></div>
+        </div>
+      ) : sortedCars.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-8 pt-4">
+          {sortedCars.map((car, index) => (
+            <div key={`${car.savedAt}-${index}`} className="flex flex-col">
+              <CarCard 
+                car={car} 
+                onLike={likeCar}
+                onUnlike={unlikeCar}
+                hasLiked={user ? (car.likedBy || []).includes(user.userId) : false}
+                currentUsernames={currentUsernames}
+                profilePhotos={profilePhotos}
+              />
+              {/* Add divider only on small screens and not for the last item */}
+              {index < sortedCars.length - 1 && (
+                <div className="mt-6 mb-2 flex justify-center items-center md:hidden">
+                  <div className="h-px w-full bg-gradient-to-r from-transparent via-gray-600/80 to-transparent"></div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-20 fade-in">
+          <p className="text-gray-400 mb-6"> No cars discovered. Be the first to share one! </p>
+        </div>
+      )}
+
+      <AuthModals 
+        isLoginOpen={isLoginOpen}
+        isSignupOpen={isSignupOpen}
+        onClose={handleCloseModals}
+        onSwitchToSignup={handleSwitchToSignup}
+        onSwitchToLogin={handleSwitchToLogin}
+      />
+    </div>
   );
 };
 

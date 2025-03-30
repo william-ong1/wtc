@@ -13,7 +13,6 @@
     "@heroui/react": "^2.7.5",
     "aws-amplify": "^6.13.5",
     "axios": "^1.7.9",
-    "framer-motion": "^12.5.0",
     "heic2any": "^0.0.4",
     "next": "15.1.7",
     "react": "^19.0.0",

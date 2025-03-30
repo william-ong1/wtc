@@ -13,16 +13,25 @@ import base64
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 import requests
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 # Load environment variables
 load_dotenv()
 
 app = FastAPI()
 
-# Enable CORS - TODO: change before deploy
+# Enable CORS
 app.add_middleware(
 	CORSMiddleware,
-	allow_origins=["http://localhost:3000", "http://192.168.0.24:3000", "http://192.168.0.69:3000"],
+	allow_origins=[
+		"http://localhost:3000",  # Local development
+		"http://192.168.0.24:3000",  # Local network IP
+		"http://192.168.0.69:3000",  # Local network IP
+		"https://whatsthatcar.vercel.app",  # Production URL
+		os.getenv('FRONTEND_URL', '')  # From environment variables if configured
+	],
 	allow_credentials=True,
 	allow_methods=["*"],
 	allow_headers=["*"],
@@ -85,6 +94,12 @@ class CarData(BaseModel):
 class UserInfo(BaseModel):
     user_id: str
     username: str
+
+# Contact form data
+class ContactForm(BaseModel):
+    name: str
+    email: Optional[str] = ""
+    message: str
 
 
 def process_image(image: UploadFile) -> tuple:
@@ -265,7 +280,8 @@ async def save_car(car_data: CarData) -> Dict[str, Any]:
                 raise HTTPException(status_code=400, detail="Invalid image source. Please provide a data URL or a valid image URL.")
             
             # Upload image to S3
-            car_data.imageUrl = await upload_to_s3(image_data, car_data.userId, generate_image_hash(image_data))
+            image_hash = generate_image_hash(image_data)
+            car_data.imageUrl = await upload_to_s3(image_data, car_data.userId, image_hash)
         else:
             # Extract the hash from the URL for consistency if already in S3
             image_hash = car_data.imageUrl.split('/')[-1].split('.')[0]
@@ -740,3 +756,63 @@ async def get_profile_photos(user_ids: List[str]) -> Dict[str, Any]:
         return {"success": True, "photos": photos}
     except Exception as e:
         return {"success": False, "error": str(e)}
+
+
+@app.post("/send-contact-email/")
+async def send_contact_email(contact_data: ContactForm) -> Dict[str, Any]:
+    """
+    Send a contact form email.
+
+    Args:
+        contact_data (ContactForm): The contact form data including name, email (optional), and message.
+ 
+    Returns:
+        A JSON object indicating whether the email was sent successfully with the key "success".
+    """
+    
+    try:
+        # Get email configuration from environment variables
+        smtp_server = os.getenv('SMTP_SERVER', 'smtp.gmail.com')
+        smtp_port = int(os.getenv('SMTP_PORT', 587))
+        email_user = os.getenv('EMAIL_USER')
+        email_password = os.getenv('EMAIL_PASSWORD')
+        recipient_email = os.getenv('RECIPIENT_EMAIL', email_user)
+        
+        if not email_user or not email_password:
+            raise HTTPException(status_code=500, detail="Email configuration is missing")
+        
+        # Create email message
+        msg = MIMEMultipart()
+        msg['From'] = email_user
+        msg['To'] = recipient_email
+        msg['Subject'] = f"Website Contact: {contact_data.name}"
+        
+        # Format the email field for display
+        email_display = contact_data.email if contact_data.email else "Not provided"
+        
+        # Create HTML body
+        html = f"""
+        <html>
+        <body>
+            <h2>New Contact Form Submission</h2>
+            <p><strong>Name:</strong> {contact_data.name}</p>
+            <p><strong>Email:</strong> {email_display}</p>
+            <hr/>
+            <h3>Message:</h3>
+            <p>{contact_data.message}</p>
+        </body>
+        </html>
+        """
+        
+        msg.attach(MIMEText(html, 'html'))
+        
+        # Send email
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.starttls()
+            server.login(email_user, email_password)
+            server.send_message(msg)
+        
+        return {"success": True, "message": "Email sent successfully"}
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to send email: {str(e)}")

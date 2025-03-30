@@ -2,6 +2,10 @@ import Header from "@/app/components/Header";
 import Footer from "@/app/components/Footer";
 import ProfileEditContent from "./ProfileEditContent";
 
+export const metadata = {
+  title: "Edit Profile | What's That Car",
+};
+
 export default function ProfileEdit() {
   return (
     <div className="flex flex-col min-h-[100dvh] font-montserrat">
