@@ -35,7 +35,7 @@ const AuthPrompt = ({ title, buttonText = "Log in" }: AuthPromptProps) => {
   };
 
   return (
-    <div className = "flex flex-col flex-1 items-center justify-center w-full h-full p-8 gap-8 fade-in">
+    <div className = "flex flex-col flex-1 items-center w-full h-full p-8 gap-8 fade-in">
       <div className="text-center max-w-md">
         <h2 className="text-2xl font-bold mb-4 text-custom-blue pt-8 pb-4"> {title} </h2>
         <button 

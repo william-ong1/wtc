@@ -28,32 +28,48 @@ const SaveSettingsModal = ({
   // Handle animation when opening/closing the modal
   useEffect(() => {
     if (isOpen) {
+      onDescriptionChange(''); // Reset description when modal opens
       setIsVisible(true);
       setIsClosing(false);
 
       // Save the current scroll position and prevent scrolling
-      scrollYRef.current = window.scrollY;
+      scrollYRef.current = window.scrollY || document.documentElement.scrollTop;
       document.body.style.position = 'fixed';
       document.body.style.top = `-${scrollYRef.current}px`;
       document.body.style.width = '100%';
+      document.body.style.overflowY = 'scroll';
     } else {
       setIsVisible(false);
       
-      // Re-enable scrolling when modal is closed
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.width = '';
-      // Restore scroll position
-      window.scrollTo(0, scrollYRef.current);
+      // Only restore if the body position is fixed (indicating our modal caused it)
+      if (document.body.style.position === 'fixed') {
+        // Re-enable scrolling when modal is closed
+        const scrollY = scrollYRef.current;
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        document.body.style.overflowY = '';
+        
+        // Use both methods for maximum browser compatibility
+        window.scrollTo(0, scrollY);
+        if ('scrollTo' in window) {
+          window.scrollTo({
+            top: scrollY,
+            behavior: 'instant' // Use 'instant' to prevent smooth scrolling
+          });
+        }
+      }
     }
 
     return () => {
       // In case component unmounts while modal is open
       if (document.body.style.position === 'fixed') {
+        const scrollY = scrollYRef.current;
         document.body.style.position = '';
         document.body.style.top = '';
         document.body.style.width = '';
-        window.scrollTo(0, scrollYRef.current);
+        document.body.style.overflowY = '';
+        window.scrollTo(0, scrollY);
       }
     };
   }, [isOpen]);

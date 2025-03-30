@@ -48,11 +48,11 @@ const AboutContent = () => {
       <section 
         className={`flex flex-col text-left text-sm lg:text-base w-full max-w-5xl gap-2 lg:gap-4 transition-all duration-700 ease-out ${aboutSectionVisible ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform'}`}>
           <div className="relative">
-            <h1 className="text-2xl font-bold text-custom-blue"> About Us </h1>
+            <h1 className="text-2xl font-bold text-custom-blue pt-1"> About Us </h1>
             <div className="absolute -bottom-2 left-0 w-20 h-0.5 bg-gradient-to-r from-custom-blue to-custom-blue/30 rounded-full"></div>
           </div>
 
-        <p className="text-gray-300 leading-relaxed mt-4">
+        <p className="text-gray-300 leading-relaxed mt-5">
           We're passionate about helping car enthusiasts and curious minds identify vehicles using the latest AI technology.
         </p>
       </section>

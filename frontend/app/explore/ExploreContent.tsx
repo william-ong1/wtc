@@ -169,11 +169,12 @@ const CarCard = ({ car, onLike, onUnlike, hasLiked = false, currentUsernames, pr
         <div className="flex items-center gap-2">
           <p className="text-sm text-gray-400"> {make} · {year} </p>
 
+          <div className="flex-1"></div>
           {/* Description buttons */}
           {car.description && (
             <button
               onClick={() => setShowDescription(!showDescription)}
-              className="text-xs text-blue-400 hover:text-blue-300 transition-colors duration-200"
+              className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors duration-200"
               aria-label={showDescription ? "Hide description" : "Show description"}
             >
               {showDescription ? "Hide description" : "View description"}

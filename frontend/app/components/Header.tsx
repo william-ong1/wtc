@@ -144,10 +144,17 @@ const Header = () => {
     const pathname = usePathname();
     const isActive = label.toLowerCase() === "home" ? pathname === "/" : pathname === `/${label.toLowerCase()}`;
     
+    // Close menus when link is clicked
+    const handleLinkClick = () => {
+      setIsMenuOpen(false);
+      setIsProfileMenuOpen(false);
+    };
+    
     return (
       <Link 
         href={link ? (link.startsWith('/') ? link : `/${link}`) : (`/${label.toLowerCase() === "home" ? "" : label.toLowerCase()}`)} 
         className={`px-3 py-2 text-sm font-medium relative group ${ isActive ? 'text-white' : 'text-gray-300 hover:text-white' }`}
+        onClick={handleLinkClick}
       >
         <span className="relative inline-block">
           {label}

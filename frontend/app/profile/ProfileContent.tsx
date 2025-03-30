@@ -65,14 +65,14 @@ const ProfileContent = () => {
   return (
     <div className="flex flex-col flex-1 w-full max-w-5xl px-6 py-4 mb-8 lg:py-8 fade-in">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-        <div className="relative mb-6 md:mb-3 ">
-          <h1 className="text-2xl font-bold text-custom-blue mb-0 md:mb-0 text-left "> Explore Cars </h1>
+        <div className="relative mb-6 md:mb-4 ">
+          <h1 className="text-2xl font-bold text-custom-blue mb-0 md:mb-0 text-left "> Profile </h1>
           <div className="absolute -bottom-2 left-0 w-20 h-0.5 bg-gradient-to-r from-custom-blue to-custom-blue/30 rounded-full"></div>
         </div>
         
         {/* Navigation buttons */}
         {!loading && (
-          <div className="flex space-x-3 mb-3">
+          <div className="flex space-x-3 mb-4">
             <Link
               href="/profile/saved"
               className="flex items-center px-3 py-2 text-sm border border-gray-800 hover:border-custom-blue/30 rounded-xl hover:bg-blue-950/20 text-white transition-all duration-300 ease-in-out"
@@ -111,7 +111,7 @@ const ProfileContent = () => {
                 priority
               />
             ) : (
-              <div className="w-full h-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center text-4xl text-gray-300 font-bold">
+              <div className="w-full h-full bg-custom-blue/70 flex items-center justify-center text-4xl text-gray-300 font-bold">
                 {profile?.username ? profile.username.charAt(0).toUpperCase() : 'U'}
               </div>
             )}
@@ -125,8 +125,11 @@ const ProfileContent = () => {
             </div>
 
             <div className="pt-4 border-t border-gray-800">
-              <h3 className="text-md font-semibold text-blue-300 mb-2">Bio</h3>
-              <p className="text-gray-300 whitespace-pre-wrap">{profile?.bio}</p>
+              <h3 className="text-base font-medium text-custom-blue mb-2 flex items-center">
+                Bio
+                <span className="ml-2 px-2 py-0.5 text-xs bg-blue-900/40 text-gray-300 border border-blue-800/70 rounded-full">Coming Soon</span>
+              </h3>
+              <p className="text-gray-300 text-sm">Bio customization will be available in the full release.</p>
             </div>
           </div>
         </div>

@@ -11,16 +11,16 @@ import AuthPrompt from '@/app/components/AuthPrompt';
 interface UserProfile {
   username: string;
   email: string;
-  bio?: string;
   profilePicture?: string;
 }
 
 const ProfileEditContent = () => {
-  const [profile, setProfile] = useState<UserProfile>({ username: '', email: '', bio: '', profilePicture: '' });
+  const [profile, setProfile] = useState<UserProfile>({ username: '', email: '', profilePicture: '' });
   const [loading, setLoading] = useState<boolean>(true);
   const [saving, setSaving] = useState<boolean>(false);
   const [newProfilePicture, setNewProfilePicture] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>('');
+  const [statusMessage, setStatusMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { user, isLoading, refreshAuthState } = useAuth();
 
@@ -38,7 +38,6 @@ const ProfileEditContent = () => {
         setProfile({
           username: attributes.preferred_username || 'User',
           email: attributes.email || '',
-          bio: attributes.profile || '',
           profilePicture: attributes.picture || '',
         });
       } catch (error) {
@@ -72,6 +71,19 @@ const ProfileEditContent = () => {
     }
   };
 
+  // Clear profile picture
+  const handleClearProfilePicture = () => {
+    setPreviewUrl('');
+    setNewProfilePicture(null);
+    setProfile({
+      ...profile,
+      profilePicture: ''
+    });
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   // Handles name change
   const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -84,6 +96,7 @@ const ProfileEditContent = () => {
   // Save profile information
   const handleSaveProfile = async () => {
     setSaving(true);
+    setStatusMessage(null);
 
     try {
       // Upload profile photo if changed
@@ -106,32 +119,51 @@ const ProfileEditContent = () => {
         } else {
           throw new Error('Failed to upload profile photo');
         }
+      } else if (pictureUrl === '' && user) {
+        // Profile picture was explicitly removed - remove from database
+        const hostname = window.location.hostname;
+        const backendUrl = `http://${hostname}:8000/remove-profile-photo/${user.userId}`;
+        await axios.post(backendUrl);
+        pictureUrl = ''; // Ensure it's empty for Cognito update
+      }
+      
+
+      // Update username in the database
+      if (user && profile.username !== user.username) {
+        const hostname = window.location.hostname;
+        const backendUrl = `http://${hostname}:8000/update-username`;
+        const response = await axios.post(backendUrl, {
+          user_id: user.userId,
+          new_username: profile.username
+        });
+        
+        if (!response.data.success) {
+          throw new Error(response.data.error || 'Failed to update username');
+        }
       }
       
       // Update user attributes in Cognito
       await updateUserAttributes({
         userAttributes: {
           preferred_username: profile.username,
-          profile: profile.bio,
-          ...(pictureUrl ? { picture: pictureUrl } : {})
+          ...(pictureUrl !== undefined ? { picture: pictureUrl } : {})
         }
       });
 
-      // Update username in the database
-      if (user && profile.username !== user.username) {
-        const hostname = window.location.hostname;
-        const backendUrl = `http://${hostname}:8000/update-username`;
-        await axios.post(backendUrl, {
-          user_id: user.userId,
-          new_username: profile.username
-        });
-      }
-            
+      setStatusMessage({
+        type: 'success',
+        text: 'Profile updated successfully!'
+      });
+      
       setTimeout(() => {
         refreshAuthState();
       }, 1000);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating profile:', error);
+      setStatusMessage({
+        type: 'error',
+        text: error.message || 'An error occurred while updating your profile'
+      });
     } finally {
       setSaving(false);
     }
@@ -162,12 +194,12 @@ const ProfileEditContent = () => {
   return (
     <div className="flex flex-col flex-1 w-full max-w-5xl px-6 py-4 mb-8 lg:py-8 fade-in">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-        <div className="relative mb-6 md:mb-3 ">
+        <div className="relative mb-6 md:mb-4">
           <h1 className="text-2xl font-bold text-custom-blue mb-0 md:mb-0 text-left"> Edit Your Profile </h1>
           <div className="absolute -bottom-2 left-0 w-20 h-0.5 bg-gradient-to-r from-custom-blue to-custom-blue/30 rounded-full"></div>
         </div>
         
-        <div className="flex space-x-3 mb-3">
+        <div className="flex space-x-3 mb-4">
           <Link
             href="/profile"
             className="flex items-center px-3 pl-2 py-2 text-sm border border-gray-800 hover:border-custom-blue/30 rounded-xl hover:bg-blue-950/20 text-white transition-all duration-300 ease-in-out"
@@ -185,7 +217,7 @@ const ProfileEditContent = () => {
         <div className="flex flex-col md:flex-row gap-8">
 
           {/* Profile picture upload */}
-          <div className="flex flex-col items-center mt-1">
+          <div className="flex flex-col items-center mt-4">
             <div className="relative h-40 w-40 rounded-full overflow-hidden border border-gray-700/50 shadow-lg shadow-black/20 mb-4">
               {(previewUrl || profile?.profilePicture) ? (
                 <Image
@@ -196,7 +228,7 @@ const ProfileEditContent = () => {
                   className="object-cover"
                 />
               ) : (
-                <div className="w-full h-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center text-4xl text-gray-300 font-bold">
+                <div className="w-full h-full bg-custom-blue/70 flex items-center justify-center text-4xl text-gray-300 font-bold">
                   {profile.username ? profile.username.charAt(0).toUpperCase() : 'U'}
                 </div>
               )}
@@ -210,23 +242,39 @@ const ProfileEditContent = () => {
               className="hidden"
             />
             
-            <button
-              type="button"
-              onClick={triggerFileInput}
-              className="px-4 py-2 mt-1.5 text-sm font-medium bg-primary-blue hover:bg-primary-blue-hover rounded-xl text-white transition-all duration-300 mb-2 flex items-center"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              Change Photo
-            </button>
+            <div className="flex space-x-2">
+              <button
+                type="button"
+                onClick={triggerFileInput}
+                className="px-4 py-2 mt-3 text-xs font-medium bg-primary-blue hover:bg-primary-blue-hover rounded-xl text-white transition-all duration-300 mb-2 flex items-center"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                Change Photo
+              </button>
+              
+              {(previewUrl || profile?.profilePicture) &&
+              <button
+                type="button"
+                onClick={handleClearProfilePicture}
+                className="mt-3 mb-2 flex items-center hover:opacity-80 transition-opacity"
+                title="Remove photo"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+}
+            </div>
+            
             <p className="text-xs text-gray-500"> Max file size: 5MB </p>
           </div>
 
           {/* Form input fields */}
           <div className="flex-1 space-y-5">
             <div>
-              <label htmlFor="username" className="block text-sm text-left font-medium text-custom-blue mb-1"> Username </label>
+              <label htmlFor="username" className="block text-base text-left font-medium text-custom-blue mb-2"> Display Username </label>
               <input
                 id="username"
                 name="username"
@@ -234,21 +282,48 @@ const ProfileEditContent = () => {
                 value={profile.username}
                 onChange={handleInputChange}
                 className="w-full px-3 py-2 bg-gray-900/90 border border-gray-800 rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-custom-blue/60 resize-none"
-                placeholder="Enter a username"
+                placeholder=""
               />
             </div>
 
             <div>
-              <label htmlFor="bio" className="block text-sm text-left font-medium text-custom-blue mb-1"> Bio </label>
+              <h3 className="text-base font-medium text-custom-blue mb-2 flex items-center">
+                Bio
+                <span className="ml-2 px-2 mb-0.5 py-0.5 text-xs bg-blue-900/40 text-gray-300 border border-blue-800/70 rounded-full">Coming Soon</span>
+              </h3>
               <textarea
                 id="bio"
                 name="bio"
                 rows={4}
-                value={profile.bio}
+                disabled
+                value="This feature will be available in a future update."
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 bg-gray-900/90 border border-gray-800 rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-custom-blue/60 resize-none"
-                placeholder="Tell us about yourself..."
+                className="w-full px-3 py-2 bg-gray-900/90 border border-gray-800 rounded-xl text-gray-500 focus:outline-none resize-none cursor-not-allowed"
               />
+
+              {statusMessage && (
+                <div className={`mt-2 text-sm px-2 py-1 rounded-md ${
+                  statusMessage.type === 'success' 
+                    ? 'bg-green-900/30 text-green-400 border border-green-700/50' 
+                    : 'bg-red-900/30 text-red-400 border border-red-700/50'
+                }`}>
+                  {statusMessage.type === 'success' ? (
+                    <span className="flex items-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      {statusMessage.text}
+                    </span>
+                  ) : (
+                    <span className="flex items-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                      {statusMessage.text}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>

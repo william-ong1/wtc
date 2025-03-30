@@ -95,6 +95,11 @@ class UserInfo(BaseModel):
     user_id: str
     username: str
 
+# User data for updating username
+class UpdateUsernameInfo(BaseModel):
+    user_id: str
+    new_username: str
+
 # Contact form data
 class ContactForm(BaseModel):
     name: str
@@ -616,18 +621,32 @@ async def create_user(user_data: UserInfo) -> Dict[str, Any]:
 
 
 @app.post("/update-username")
-async def update_username(new_user_data: UserInfo) -> Dict[str, Any]:
+async def update_username(new_user_data: UpdateUsernameInfo) -> Dict[str, Any]:
     """
     Update a user's username in the users table.
     
     Args:
-        new_user_data (UserInfo): The user data containing the updated username.
+        new_user_data (UpdateUsernameInfo): The user data containing the updated username.
         
     Returns:
         A JSON object indicating whether the update was successful with the key "success".
     """
 
     try:
+        # Check if username already exists
+        response = users_table.scan(
+            FilterExpression="username = :username",
+            ExpressionAttributeValues={
+                ":username": new_user_data.new_username
+            }
+        )
+        
+        # If username exists and belongs to a different user, reject the update
+        if response.get('Items'):
+            for item in response.get('Items', []):
+                if item.get('userId') != new_user_data.user_id:
+                    return {"success": False, "error": "Username already taken"}
+        
         # Update the user's username in the users table
         users_table.update_item(
             Key={'userId': new_user_data.user_id},
@@ -754,6 +773,53 @@ async def get_profile_photos(user_ids: List[str]) -> Dict[str, Any]:
                 photos[user_id] = ''
         
         return {"success": True, "photos": photos}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+@app.post("/remove-profile-photo/{user_id}")
+async def remove_profile_photo(user_id: str) -> Dict[str, Any]:
+    """
+    Remove a user's profile photo from S3 and update the user's data to remove the photo reference.
+    
+    Args:
+        user_id (str): The Cognito user id of the user.
+
+    Returns:
+        A JSON object indicating whether the removal was successful with the key "success".
+    """
+
+    try:
+        # Retrieve the user's data from the users table
+        user_response = users_table.get_item(
+            Key={'userId': user_id}
+        )
+
+        # Check if user exists
+        if 'Item' in user_response:
+            # Delete the profile photo from S3 if it exists
+            old_url = user_response['Item'].get('profilePhoto', '')
+            if old_url:
+                old_key = old_url.split(f"{S3_BUCKET_NAME}.s3.{aws_region}.amazonaws.com/")[1]
+
+                # Remove from S3
+                s3_client.delete_object(
+                    Bucket=S3_BUCKET_NAME,
+                    Key=old_key
+                )
+
+                # Update the user's profile photo URL in the users table to empty string
+                users_table.update_item(
+                    Key={'userId': user_id},
+                    UpdateExpression='SET profilePhoto = :photo_url',
+                    ExpressionAttributeValues={
+                        ':photo_url': ''
+                    }
+                )
+
+            return {"success": True}
+        else:
+            return {"success": False, "error": "User not found"}
     except Exception as e:
         return {"success": False, "error": str(e)}
 

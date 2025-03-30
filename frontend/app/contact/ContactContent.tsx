@@ -46,7 +46,7 @@ const ContactContent = () => {
   return (
     <div className="flex flex-col flex-1 w-full max-w-5xl px-6 py-4 mb-8 lg:py-8 fade-in">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-        <div className="relative mb-6 md:mb-0">
+        <div className="relative mb-6 md:mb-4">
           <h1 className="text-2xl font-bold text-custom-blue mb-0 md:mb-0 text-left">Contact Us</h1>
           <div className="absolute -bottom-2 left-0 w-20 h-0.5 bg-gradient-to-r from-custom-blue to-custom-blue/30 rounded-full"></div>
         </div>
@@ -57,7 +57,7 @@ const ContactContent = () => {
       </p>
 
       <p className="text-gray-500 leading-relaxed mb-6 text-left text-sm">
-        Note: If you include your email, we can get back to you directly. However, we take everything into consideration. Thank you for your time!
+        Note: If you include your email, we can get back to you directly. However, we will take everything into consideration. Thank you!
       </p>
 
       {submitSuccess ? (
@@ -99,7 +99,7 @@ const ContactContent = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full px-3 py-2 bg-gray-900/90 border border-gray-800 rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-custom-blue/60"
-                placeholder="email@example.com"
+                placeholder="you@example.com"
               />
             </div>
             
