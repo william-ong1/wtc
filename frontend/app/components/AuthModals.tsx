@@ -42,6 +42,8 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
   useEffect(() => {
     setError('');
     setSuccessMessage('');
+    setEmail('');
+    setPassword('');
     if (isLoginOpen || isSignupOpen) {
       setIsVisible(true);
       setIsClosing(false);
@@ -69,7 +71,7 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
       setShowConfirmation(false);
       setShowForgotPassword(false);
       setShowResetPasswordConfirmation(false);
-    }, 300);
+    }, 200);
   };
 
   // Handler for logging in
@@ -81,15 +83,15 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
     
     try {
       await signIn({ username, password });
-      setSuccessMessage('Login successful! Redirecting...');
+      setSuccessMessage('Login successful!');
       // Call onAuthSuccess if provided
       if (onAuthSuccess) {
         onAuthSuccess();
       }
-      // Slight delay before closing to show success message
+      // Delay before closing to show success message
       setTimeout(() => {
         handleCloseWithAnimation();
-      }, 1000);
+      }, 400);
     } catch (error: unknown) {
       console.error('Login error:', error);
       const authError = error as AuthError;
@@ -159,15 +161,15 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
       // Try to sign in automatically after confirmation
       try {
         await signIn({ username, password });
-        setSuccessMessage('Successfully signed in! Redirecting...');
+        setSuccessMessage('Successfully signed in!');
         // Call onAuthSuccess if provided
         if (onAuthSuccess) {
           onAuthSuccess();
         }
-        // Slight delay before closing to show success message
+        // Shorter delay before closing to show success message
         setTimeout(() => {
           handleCloseWithAnimation();
-        }, 1000);
+        }, 400);
       } catch (signInError: unknown) {
         console.error('Auto sign-in after confirmation failed:', signInError);
         setShowConfirmation(false);
@@ -262,12 +264,12 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
 
   return (
     <div 
-      className={`fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-300 ease-in-out ${isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+      className={`fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-200 ease-in-out ${isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
       onClick={handleCloseWithAnimation}
     >
       <div 
-        className={`bg-gray-950 rounded-3xl p-6 w-full max-w-xs shadow-md shadow-blue-300/20 border border-gray-900 relative transition-all duration-300 ease-in-out
-          ${isVisible && !isClosing ? 'opacity-100 scale-100 ' : 'opacity-0 scale-100'}
+        className={`bg-gray-950 rounded-3xl p-6 w-full max-w-xs shadow-md shadow-blue-300/20 border border-gray-900 relative transition-all duration-200 ease-in-out
+          ${isVisible && !isClosing ? 'opacity-100 scale-100 ' : 'opacity-0 scale-95'}
         `}
         onClick={(e) => e.stopPropagation()}
       >

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import AmplifyProvider from "./providers/AmplifyProvider";
+import Header from "./components/Header";
+import Footer from "./components/Footer";
 
 export const metadata: Metadata = {
   title: "What's That Car?",
@@ -26,9 +28,15 @@ export default function RootLayout({
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon/favicon-16x16.png"/>
         <link rel="manifest" href="/favicon/site.webmanifest"/>
       </head>
-      <body>
+      <body className="font-montserrat">
         <AmplifyProvider>
-          {children}
+          <div className="flex flex-col min-h-[100dvh]">
+            <Header />
+            <main className="flex flex-1 pt-16">
+              {children}
+            </main>
+            <Footer />
+          </div>
         </AmplifyProvider>
       </body>
     </html>

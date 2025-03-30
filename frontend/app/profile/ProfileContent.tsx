@@ -65,14 +65,14 @@ const ProfileContent = () => {
   return (
     <div className="flex flex-col flex-1 w-full max-w-5xl px-6 py-4 mb-8 lg:py-8 fade-in">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-        <div className="relative mb-6 md:mb-0 ">
-          <h1 className="text-2xl font-bold text-custom-blue mb-0 md:mb-0 text-left"> Your Profile </h1>
+        <div className="relative mb-6 md:mb-3 ">
+          <h1 className="text-2xl font-bold text-custom-blue mb-0 md:mb-0 text-left "> Explore Cars </h1>
           <div className="absolute -bottom-2 left-0 w-20 h-0.5 bg-gradient-to-r from-custom-blue to-custom-blue/30 rounded-full"></div>
         </div>
         
         {/* Navigation buttons */}
         {!loading && (
-          <div className="flex space-x-3 pb-6">
+          <div className="flex space-x-3 mb-3">
             <Link
               href="/profile/saved"
               className="flex items-center px-3 py-2 text-sm border border-gray-800 hover:border-custom-blue/30 rounded-xl hover:bg-blue-950/20 text-white transition-all duration-300 ease-in-out"

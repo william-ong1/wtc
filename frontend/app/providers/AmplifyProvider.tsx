@@ -34,7 +34,7 @@ export default function AmplifyProvider({ children }: { children: ReactNode }) {
       const currentUser = await getCurrentUser();
       setUser(currentUser);
     } catch (error) {
-      console.error("error:", error);
+      // Will result in error if user is not authenticated (can't call such API) - disregard
       setUser(null);
     } finally {
       setIsLoading(false);

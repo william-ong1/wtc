@@ -11,13 +11,13 @@ export default function PrivacyPolicy() {
     <div className="flex flex-col min-h-[100dvh] font-montserrat">
       <Header />
 
-      <main className="flex flex-row flex-1 justify-center items-stretch text-center overflow-x-hidden pt-16">
+      <main className="flex flex-row flex-1 justify-center items-stretch text-center overflow-x-hidden pt-16 pb-4">
         <div className="flex flex-col flex-1 items-center w-full lg:w-3/4 h-full py-4 lg:py-8 px-6 lg:px-12 gap-8 fade-in">
           <h1 className="text-2xl lg:text-3xl font-bold mb-2 text-custom-blue"> Privacy Policy </h1>
           
-          <div className="flex flex-col text-left text-sm lg:text-base w-full max-w-5xl gap-6">
+          <div className="flex flex-col text-left text-sm lg:text-base w-full max-w-5xl gap-8">
             <section>
-              <div className="relative mb-4">
+              <div className="relative mb-6">
                 <h2 className="text-xl font-bold text-custom-blue">Information We Collect</h2>
                 <div className="absolute -bottom-2 left-0 w-16 h-0.5 bg-gradient-to-r from-custom-blue to-custom-blue/30 rounded-full"></div>
               </div>
@@ -27,7 +27,7 @@ export default function PrivacyPolicy() {
             </section>
 
             <section>
-              <div className="relative mb-4">
+              <div className="relative mb-6">
                 <h2 className="text-xl font-bold text-custom-blue">How We Use Your Information</h2>
                 <div className="absolute -bottom-2 left-0 w-16 h-0.5 bg-gradient-to-r from-custom-blue to-custom-blue/30 rounded-full"></div>
               </div>
@@ -43,7 +43,7 @@ export default function PrivacyPolicy() {
             </section>
 
             <section>
-              <div className="relative mb-4">
+              <div className="relative mb-6">
                 <h2 className="text-xl font-bold text-custom-blue">Third-Party Services</h2>
                 <div className="absolute -bottom-2 left-0 w-16 h-0.5 bg-gradient-to-r from-custom-blue to-custom-blue/30 rounded-full"></div>
               </div>
@@ -60,7 +60,7 @@ export default function PrivacyPolicy() {
             </section>
 
             <section>
-              <div className="relative mb-4">
+              <div className="relative mb-6">
                 <h2 className="text-xl font-bold text-custom-blue">Your Rights</h2>
                 <div className="absolute -bottom-2 left-0 w-16 h-0.5 bg-gradient-to-r from-custom-blue to-custom-blue/30 rounded-full"></div>
               </div>
@@ -75,7 +75,7 @@ export default function PrivacyPolicy() {
             </section>
 
             <section>
-              <div className="relative mb-4">
+              <div className="relative mb-6">
                 <h2 className="text-xl font-bold text-custom-blue">Changes to This Privacy Policy</h2>
                 <div className="absolute -bottom-2 left-0 w-16 h-0.5 bg-gradient-to-r from-custom-blue to-custom-blue/30 rounded-full"></div>
               </div>
@@ -85,7 +85,7 @@ export default function PrivacyPolicy() {
             </section>
 
             <section>
-              <div className="relative mb-4">
+              <div className="relative mb-6">
                 <h2 className="text-xl font-bold text-custom-blue">Contact Us</h2>
                 <div className="absolute -bottom-2 left-0 w-16 h-0.5 bg-gradient-to-r from-custom-blue to-custom-blue/30 rounded-full"></div>
               </div>
