@@ -3,50 +3,52 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #000000;
+  --foreground: #ffffff;
+  background-color: #000000;
+  color: #ffffff;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #ececec;
-    --foreground: #000000;
-    /* --background: #121212;
-    --foreground: #ffffff; */
-  }
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  color: var(--foreground);
+  background: var(--background);
+  width: 100%;
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
+  display: flex;
+  flex-direction: column;
+  height: fit-content;
+  max-width: 100vw;
 }
 
-
-@keyframes gradient {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+/* Fade-in effect */
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
 }
 
-.animate-gradient {
-  background: linear-gradient(90deg, #3b82f6, #9333ea, #3b82f6);
-  background-size: 200% 200%;
-  animation: gradient 5s ease infinite;
+.fade-in {
+  animation: fadeIn 0.5s ease-in-out forwards;
 }
 
-@keyframes scan {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
+/* Bounce animation */
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(1.5px);
+  }
+  50% {
+    transform: translateY(-1.5px);
+  }
 }
 
-.scan-effect {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-  animation: scan 3s linear infinite;
-  pointer-events: none; /* Ensures it doesn't interfere with interactions */
+.animate-bounce {
+  animation: bounce 1s ease-in-out infinite;
 }
-
