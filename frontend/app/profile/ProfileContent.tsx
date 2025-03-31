@@ -125,7 +125,7 @@ const ProfileContent = () => {
             </div>
 
             <div className="pt-4 border-t border-gray-800">
-              <h3 className="text-sm font-medium text-custom-blue mb-2 flex items-center">
+              <h3 className="text-sm font-medium text-white mb-2 flex items-center">
                 Bio
                 <span className="ml-2 px-2 py-0.5 text-xs bg-blue-900/40 text-gray-300 border border-blue-800/70 rounded-full">Coming Soon</span>
               </h3>

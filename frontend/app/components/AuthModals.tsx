@@ -128,8 +128,7 @@ export default function AuthModals({ isLoginOpen, isSignupOpen, onClose, onSwitc
       });
 
       // Create user entry in the database
-      const hostname = window.location.hostname;
-      const backendUrl = `http://${hostname}:8000/create-user`;
+      const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/create-user`;
       await axios.post(backendUrl, {
         user_id: userId,
         username: username

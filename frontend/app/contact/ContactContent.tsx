@@ -20,7 +20,7 @@ const ContactContent = () => {
     setSubmitError("");
 
     try {
-      const backendUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/send-contact-email/`;
+      const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/send-contact-email/`;
       const response = await axios.post(backendUrl, {
         name,
         email,
@@ -52,7 +52,7 @@ const ContactContent = () => {
         </div>
       </div>
 
-      <p className="text-gray-300 leading-relaxed mb-2 text-left text-sm md:text-base">
+      <p className="text-white leading-relaxed mb-2 text-left text-sm md:text-base">
         Bugs? Suggestions? Feedback? We'd love to hear from you! Please fill out the form below.
       </p>
 
@@ -68,7 +68,7 @@ const ContactContent = () => {
             </svg>
           </div>
           <h2 className="text-xl font-bold text-white mb-2">Message Sent!</h2>
-          <p className="text-gray-300 mb-6">Thank you for your feedback. We'll review your message and get back to you if needed.</p>
+          <p className="text-white mb-6">Thank you for your feedback. We'll review your message and get back to you if needed.</p>
           <Link href="/" className="px-4 py-2 bg-primary-blue hover:bg-primary-blue-hover rounded-xl text-white transition-all duration-300">
             Return to Home
           </Link>
@@ -79,7 +79,7 @@ const ContactContent = () => {
         <form onSubmit={handleSubmit} className="bg-gray-950/90 backdrop-blur-sm border border-gray-900 rounded-2xl p-6 shadow-md shadow-blue-300/10">
           <div className="space-y-5">
             <div>
-              <label htmlFor="name" className="block text-xs md:text-sm text-left font-medium text-custom-blue mb-1">Your Name</label>
+              <label htmlFor="name" className="block text-xs md:text-sm text-left font-medium text-white mb-1">Your Name</label>
               <input
                 type="text"
                 id="name"
@@ -92,7 +92,7 @@ const ContactContent = () => {
             </div>
             
             <div>
-              <label htmlFor="email" className="block text-xs md:text-sm text-left font-medium text-custom-blue mb-1">Your Email (Optional)</label>
+              <label htmlFor="email" className="block text-xs md:text-sm text-left font-medium text-white mb-1">Your Email (Optional)</label>
               <input
                 type="email"
                 id="email"
@@ -104,7 +104,7 @@ const ContactContent = () => {
             </div>
             
             <div>
-              <label htmlFor="message" className="block text-xs md:text-sm text-left font-medium text-custom-blue mb-1">Your Message</label>
+              <label htmlFor="message" className="block text-xs md:text-sm text-left font-medium text-white mb-1">Your Message</label>
               <textarea
                 id="message"
                 value={message}

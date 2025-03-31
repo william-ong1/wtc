@@ -191,7 +191,7 @@ const SavedContent: React.FC = () => {
     setLoading(true);
 
     try {
-      const backendUrl = `http://${window.location.hostname}:8000/get-user-cars/${user.userId}`;
+      const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/get-user-cars/${user.userId}`;
       const response = await axios.get(backendUrl);
       
       if (response.data.success) {
@@ -209,7 +209,7 @@ const SavedContent: React.FC = () => {
   // Deletes a car from the user's saved cars
   const deleteCar = async (userId: string, savedAt: string): Promise<void> => {
     try {
-      const backendUrl = `http://${window.location.hostname}:8000/delete-car/${userId}/${encodeURIComponent(savedAt)}`;
+      const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/delete-car/${userId}/${encodeURIComponent(savedAt)}`;
       const response = await axios.delete(backendUrl);
       
       if (response.data.success) {
@@ -265,7 +265,7 @@ const SavedContent: React.FC = () => {
     <div className="flex flex-col flex-1 w-full max-w-5xl px-6 py-4 mb-8 lg:py-8 fade-in">
       <div className="flex flex-row items-center justify-between mb-6">
         <div className="relative mb-4 md:mb-0 ">
-          <h1 className="text-2xl font-bold text-custom-blue mb-0 md:mb-0 text-left"> Saved Cars </h1>
+          <h1 className="text-2xl font-bold text-custom-blue mb-0 md:mb-0 text-left"> Saved </h1>
           <div className="absolute -bottom-2 left-0 w-20 h-0.5 bg-gradient-to-r from-custom-blue to-custom-blue/30 rounded-full"></div>
         </div>
         

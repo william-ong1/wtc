@@ -106,8 +106,7 @@ const ProfileEditContent = () => {
         const formData = new FormData();
         formData.append("file", newProfilePicture);
         
-        const hostname = window.location.hostname;
-        const backendUrl = `http://${hostname}:8000/upload-profile-photo/${user.userId}`;
+        const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/upload-profile-photo/${user.userId}`;
         const response = await axios.post(backendUrl, formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
@@ -121,17 +120,15 @@ const ProfileEditContent = () => {
         }
       } else if (pictureUrl === '' && user) {
         // Profile picture was explicitly removed - remove from database
-        const hostname = window.location.hostname;
-        const backendUrl = `http://${hostname}:8000/remove-profile-photo/${user.userId}`;
+        const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/remove-profile-photo/${user.userId}`;
         await axios.post(backendUrl);
         pictureUrl = ''; // Ensure it's empty for Cognito update
       }
       
 
       // Update username in the database
-      if (user && profile.username !== user.username) {
-        const hostname = window.location.hostname;
-        const backendUrl = `http://${hostname}:8000/update-username`;
+      if (user && profile.username) {
+        const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/update-username`;
         const response = await axios.post(backendUrl, {
           user_id: user.userId,
           new_username: profile.username
@@ -158,11 +155,11 @@ const ProfileEditContent = () => {
       setTimeout(() => {
         refreshAuthState();
       }, 1000);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error updating profile:', error);
       setStatusMessage({
         type: 'error',
-        text: error.message || 'An error occurred while updating your profile'
+        text: error instanceof Error ? error.message : 'An error occurred while updating your profile'
       });
     } finally {
       setSaving(false);
@@ -202,7 +199,7 @@ const ProfileEditContent = () => {
         <div className="flex space-x-3 pb-3">
           <Link
             href="/profile"
-            className="flex items-center px-3 pl-2 py-2 text-sm border border-gray-800 hover:border-custom-blue/30 rounded-xl hover:bg-blue-950/20 text-white transition-all duration-300 ease-in-out"
+            className="flex items-center px-3 pl-2 py-2 text-sm border border-gray-800 hover:border-custom-blue/30 rounded-xl hover:bg-blue-950/20 text-white transition-all durawhite ease-in-out"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 text-custom-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7" />
@@ -212,7 +209,7 @@ const ProfileEditContent = () => {
         </div>
       </div>
 
-      <div className="bg-gray-950/90 backdrop-blur-sm border border-gray-900 rounded-2xl p-6 shadow-md shadow-blue-300/10 mt-4">
+      <div className="bg-gray-950/90 backdrop-blur-sm border border-gray-900 rounded-2xl p-6 shadow-md shadow-white/10 mt-4">
 
         <div className="flex flex-col md:flex-row gap-8">
 
@@ -228,7 +225,7 @@ const ProfileEditContent = () => {
                   className="object-cover"
                 />
               ) : (
-                <div className="w-full h-full bg-custom-blue/70 flex items-center justify-center text-4xl text-gray-300 font-bold">
+                <div className="w-full h-full bg-custom-blue/70 flex items-center justify-center text-4xl text-white font-bold">
                   {profile.username ? profile.username.charAt(0).toUpperCase() : 'U'}
                 </div>
               )}
@@ -246,7 +243,7 @@ const ProfileEditContent = () => {
               <button
                 type="button"
                 onClick={triggerFileInput}
-                className="px-4 py-2 mt-3 text-xs font-medium bg-primary-blue hover:bg-primary-blue-hover rounded-xl text-white transition-all duration-300 mb-2 flex items-center"
+                className="px-4 py-2 mt-3 text-xs font-medium bg-primary-blue hover:bg-primary-blue-hover rounded-xl text-white transition-all durawhite mb-2 flex items-center"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -274,7 +271,7 @@ const ProfileEditContent = () => {
           {/* Form input fields */}
           <div className="flex-1 space-y-5">
             <div>
-              <label htmlFor="username" className="block text-sm text-left font-medium text-custom-blue mb-2"> Display Username </label>
+              <label htmlFor="username" className="block text-sm text-left font-medium text-white mb-2"> Display Username </label>
               <input
                 id="username"
                 name="username"
@@ -287,9 +284,9 @@ const ProfileEditContent = () => {
             </div>
 
             <div>
-              <h3 className="text-sm font-medium text-custom-blue mb-2 flex items-center">
+              <h3 className="text-sm font-medium text-white mb-2 flex items-center">
                 Bio
-                <span className="ml-2 px-2 mb-0.5 py-0.5 text-xs bg-blue-900/40 text-gray-300 border border-blue-800/70 rounded-full">Coming Soon</span>
+                <span className="ml-2 px-2 mb-0.5 py-0.5 text-xs bg-blue-900/40 text-white border border-blue-800/70 rounded-full">Coming Soon</span>
               </h3>
               <textarea
                 id="bio"
@@ -331,12 +328,12 @@ const ProfileEditContent = () => {
         <div className="mt-8 pt-6 border-t border-gray-800 flex justify-end">
           <div className="flex space-x-3">
             {/* Cancel and save buttons */}
-            <Link href="/profile" className="flex px-5 py-2.5 border border-gray-800 rounded-xl text-sm text-white transition-all duration-300 hover:bg-gray-800/50 transition-all duration-300 ease-in-out transform hover:scale-[1.05]"> Cancel </Link>
+            <Link href="/profile" className="flex px-5 py-2.5 border border-gray-800 rounded-xl text-sm text-white transition-all durawhite hover:bg-gray-800/50 transition-all durawhite ease-in-out transform hover:scale-[1.05]"> Cancel </Link>
             <button
               type="button"
               onClick={handleSaveProfile}
               disabled={saving}
-              className="flex items-center px-5 py-2.5 font-medium rounded-xl text-sm bg-primary-blue hover:bg-primary-blue-hover text-white transition-all duration-300 ease-in-out transform hover:scale-[1.02] shadow-md shadow-blue-500/20 disabled:opacity-50 disabled:hover:scale-100"
+              className="flex items-center px-5 py-2.5 font-medium rounded-xl text-sm bg-primary-blue hover:bg-primary-blue-hover text-white transition-all durawhite ease-in-out transform hover:scale-[1.02] shadow-md shadow-blue-500/20 disabled:opacity-50 disabled:hover:scale-100"
             >
               {saving ? (
                 <>

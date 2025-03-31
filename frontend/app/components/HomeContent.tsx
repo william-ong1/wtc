@@ -160,7 +160,7 @@ const HomeContent = () => {
       // Scroll to the image with header adjustment (center image in non-header space)
       scrollToElementWithHeaderAdjustment(imageRef, 100);
 
-      const backendUrl = `http://${window.location.hostname}:8000/predict/`;
+      const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/predict/`;
       const response = await axios.post(backendUrl, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
@@ -290,7 +290,7 @@ const HomeContent = () => {
       };
       
       // Call backend API to save to DynamoDB and S3
-      const backendUrl = `http://${window.location.hostname}:8000/save-car/`;
+      const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/save-car/`;
       const response = await axios.post(backendUrl, carData, {
         headers: { 'Content-Type': 'application/json' },
       });
@@ -424,7 +424,7 @@ const HomeContent = () => {
             What's That Car?
           </h1>
 
-          <p className="text-sm lg:text-base text-gray-300 leading-relaxed">
+          <p className="text-sm lg:text-base text-gray-100 leading-relaxed">
             From daily commuters to rare supercars, our AI-powered car recognition system can identify any vehicle with 97%<sup className="text-[0.6rem] relative mb-12">†</sup> accuracy. Whether you're a car enthusiast or just curious about a special car you spotted, we've got you covered.
           </p>
 

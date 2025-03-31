@@ -3,6 +3,7 @@ import "./globals.css";
 import AmplifyProvider from "./providers/AmplifyProvider";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
+import { Analytics } from "@vercel/analytics/react"
 
 export const metadata: Metadata = {
   title: "What's That Car?",
@@ -39,6 +40,7 @@ export default function RootLayout({
             <Footer />
           </div>
         </AmplifyProvider>
+        <Analytics />
       </body>
     </html>
   );

@@ -120,22 +120,22 @@ const CarInfo = ({ make, model, year, rarity, link, onSaveResults, isSaved = fal
       {/* Additional car details */}
       <div className="space-y-4 text-sm">
         <div className={`flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-all duration-300 ease-in-out ${animateContent ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`} style={{ transitionDelay: '50ms' }}>
-          <span className="font-medium text-gray-300"> Make </span>
+          <span className="font-medium text-white"> Make </span>
           <span className="text-white"> {make !== "n/a" ? make : "—"} </span>
         </div>
 
         <div className={`flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-all duration-300 ease-in-out ${animateContent ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`} style={{ transitionDelay: '100ms' }}>
-          <span className="font-medium text-gray-300"> Model </span>
+          <span className="font-medium text-white"> Model </span>
           <span className="text-white text-right"> {model !== "n/a" ? model : "—"} </span>
         </div>
         
         <div className={`flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-all duration-300 ease-in-out ${animateContent ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`} style={{ transitionDelay: '150ms' }}>
-          <span className="font-medium text-gray-300"> Year </span>
+          <span className="font-medium text-white"> Year </span>
           <span className="text-white"> {year !== "n/a" ? year : "—"} </span>
         </div>
 
         <div className={`flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-all duration-300 ease-in-out ${animateContent ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'}`} style={{ transitionDelay: '200ms' }}>
-          <span className="font-medium text-gray-300"> Rarity<sup className='text-[0.6rem]'>‡</sup> </span>
+          <span className="font-medium text-white"> Rarity<sup className='text-[0.6rem]'>‡</sup> </span>
           <span className="text-white">
             {rarity !== "n/a" ?
               <span className={`text-xs px-2 py-1 rounded-full ${getRarityColor(rarity)} bg-white/10`}>

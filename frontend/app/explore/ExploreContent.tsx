@@ -167,7 +167,7 @@ const CarCard = ({ car, onLike, onUnlike, hasLiked = false, currentUsernames, pr
         </div>
 
         <div className="flex items-center gap-2">
-          <p className="text-sm text-gray-400"> {make} · {year} </p>
+          <p className="text-sm text-gray-300"> {make} · {year} </p>
 
           <div className="flex-1"></div>
           {/* Description buttons */}
@@ -230,8 +230,7 @@ const ExploreContent = () => {
   // Fetch current usernames for all car posters
   const fetchCurrentUsernames = useCallback(async (userIds: string[]): Promise<void> => {
     try {
-      const hostname = window.location.hostname;
-      const backendUrl = `http://${hostname}:8000/get-current-usernames`;
+      const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/get-current-usernames`;
       const response = await axios.post(backendUrl, userIds);
       
       if (response.data.success) {
@@ -247,8 +246,7 @@ const ExploreContent = () => {
   // Fetch profile photos for all car posts
   const fetchProfilePhotos = useCallback(async (userIds: string[]): Promise<void> => {
     try {
-      const hostname = window.location.hostname;
-      const backendUrl = `http://${hostname}:8000/get-profile-photos`;
+      const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/get-profile-photos`;
       const response = await axios.post(backendUrl, userIds);
       
       if (response.data.success) {
@@ -265,8 +263,7 @@ const ExploreContent = () => {
   const fetchAllCars = useCallback(async (): Promise<void> => {
     setLoading(true);
     try {
-      const hostname = window.location.hostname;
-      const backendUrl = `http://${hostname}:8000/get-all-cars`;
+      const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/get-all-cars`;
       const response = await axios.get(backendUrl);
       
       if (response.data.success) {
@@ -295,8 +292,7 @@ const ExploreContent = () => {
     }
     
     try {
-      const hostname = window.location.hostname;
-      const backendUrl = `http://${hostname}:8000/like-car/${userId}/${encodeURIComponent(savedAt)}/${user.userId}`;
+      const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/like-car/${userId}/${encodeURIComponent(savedAt)}/${user.userId}`;
       const response = await axios.post(backendUrl);
       
       if (response.data.success) {
@@ -328,8 +324,7 @@ const ExploreContent = () => {
     }
     
     try {
-      const hostname = window.location.hostname;
-      const backendUrl = `http://${hostname}:8000/unlike-car/${userId}/${encodeURIComponent(savedAt)}/${user.userId}`;
+      const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/unlike-car/${userId}/${encodeURIComponent(savedAt)}/${user.userId}`;
       const response = await axios.post(backendUrl);
       
       if (response.data.success) {
@@ -387,7 +382,7 @@ const ExploreContent = () => {
     <div className="flex flex-col flex-1 w-full max-w-5xl px-6 py-4 mb-8 lg:py-8 fade-in">
       <div className="flex flex-row items-center justify-between mb-6">
         <div className="relative mb-4 md:mb-0 ">
-          <h1 className="text-2xl font-bold text-custom-blue mb-0 md:mb-0 text-left"> Explore Cars </h1>
+          <h1 className="text-2xl font-bold text-custom-blue mb-0 md:mb-0 text-left"> Explore </h1>
           <div className="absolute -bottom-2 left-0 w-20 h-0.5 bg-gradient-to-r from-custom-blue to-custom-blue/30 rounded-full"></div>
         </div>
         

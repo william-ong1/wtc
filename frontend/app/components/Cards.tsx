@@ -24,7 +24,7 @@ interface StatCardProps {
 const StatCard = ({ stat, criteria, superscript }: StatCardProps) => (
   <div className="flex flex-col items-center">
     <span className="text-lg lg:text-xl font-bold text-custom-blue/85"> {stat}{superscript && <sup className="text-[0.7rem]">{superscript} </sup>} </span>
-    <span className="text-gray-400"> {criteria} </span>
+    <span className="text-gray-300"> {criteria} </span>
   </div>
 );
 

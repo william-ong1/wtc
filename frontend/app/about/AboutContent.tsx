@@ -52,7 +52,7 @@ const AboutContent = () => {
             <div className="absolute -bottom-2 left-0 w-20 h-0.5 bg-gradient-to-r from-custom-blue to-custom-blue/30 rounded-full"></div>
           </div>
 
-        <p className="text-gray-300 leading-relaxed mt-5">
+        <p className="text-white leading-relaxed mt-5">
             We are a platform designed to help car enthusiasts and curious minds identify vehicles using the latest AI technology. Save your results, share your discoveries, and explore a growing collection of cars with What's That Car.
 
             {/* Join a community passionate about cars, knowledge-sharing, and discovery. */} 
