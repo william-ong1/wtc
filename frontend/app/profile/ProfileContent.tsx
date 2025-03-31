@@ -64,15 +64,15 @@ const ProfileContent = () => {
 
   return (
     <div className="flex flex-col flex-1 w-full max-w-5xl px-6 py-4 mb-8 lg:py-8 fade-in">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-        <div className="relative mb-6 md:mb-4 ">
+      <div className="flex flex-row items-center justify-between mb-6">
+        <div className="relative mb-4 md:mb-0">
           <h1 className="text-2xl font-bold text-custom-blue mb-0 md:mb-0 text-left "> Profile </h1>
           <div className="absolute -bottom-2 left-0 w-20 h-0.5 bg-gradient-to-r from-custom-blue to-custom-blue/30 rounded-full"></div>
         </div>
         
         {/* Navigation buttons */}
         {!loading && (
-          <div className="flex space-x-3 mb-4">
+          <div className="flex space-x-3 pb-3">
             <Link
               href="/profile/saved"
               className="flex items-center px-3 py-2 text-sm border border-gray-800 hover:border-custom-blue/30 rounded-xl hover:bg-blue-950/20 text-white transition-all duration-300 ease-in-out"
@@ -80,7 +80,7 @@ const ProfileContent = () => {
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 text-custom-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
               </svg>
-              Saved Cars
+              Saved
             </Link>
 
             <Link
@@ -90,13 +90,13 @@ const ProfileContent = () => {
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 text-custom-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
               </svg>
-              Edit Profile
+              Edit
             </Link>
           </div>
         )}
       </div>
 
-      <div className="bg-gray-950/90 backdrop-blur-sm border border-gray-900 rounded-2xl p-6 shadow-md shadow-blue-300/10">
+      <div className="bg-gray-950/90 backdrop-blur-sm border border-gray-900 rounded-2xl p-6 shadow-md shadow-blue-300/10 mt-4">
         <div className="flex flex-col md:flex-row gap-8 items-center md:items-start fade-in">
 
           {/* Profile picture */}
@@ -125,7 +125,7 @@ const ProfileContent = () => {
             </div>
 
             <div className="pt-4 border-t border-gray-800">
-              <h3 className="text-base font-medium text-custom-blue mb-2 flex items-center">
+              <h3 className="text-sm font-medium text-custom-blue mb-2 flex items-center">
                 Bio
                 <span className="ml-2 px-2 py-0.5 text-xs bg-blue-900/40 text-gray-300 border border-blue-800/70 rounded-full">Coming Soon</span>
               </h3>

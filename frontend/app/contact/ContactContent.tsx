@@ -52,11 +52,11 @@ const ContactContent = () => {
         </div>
       </div>
 
-      <p className="text-gray-300 leading-relaxed mb-2 text-left">
+      <p className="text-gray-300 leading-relaxed mb-2 text-left text-sm md:text-base">
         Bugs? Suggestions? Feedback? We'd love to hear from you! Please fill out the form below.
       </p>
 
-      <p className="text-gray-500 leading-relaxed mb-6 text-left text-sm">
+      <p className="text-gray-500 leading-relaxed mb-6 text-left text-xs md:text-sm">
         Note: If you include your email, we can get back to you directly. However, we will take everything into consideration. Thank you!
       </p>
 
@@ -79,39 +79,39 @@ const ContactContent = () => {
         <form onSubmit={handleSubmit} className="bg-gray-950/90 backdrop-blur-sm border border-gray-900 rounded-2xl p-6 shadow-md shadow-blue-300/10">
           <div className="space-y-5">
             <div>
-              <label htmlFor="name" className="block text-sm text-left font-medium text-custom-blue mb-1">Your Name</label>
+              <label htmlFor="name" className="block text-xs md:text-sm text-left font-medium text-custom-blue mb-1">Your Name</label>
               <input
                 type="text"
                 id="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
-                className="w-full px-3 py-2 bg-gray-900/90 border border-gray-800 rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-custom-blue/60"
+                className="w-full px-3 py-2 bg-gray-900/90 border text-sm md:text-base border-gray-800 rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-custom-blue/60"
                 placeholder="John Doe"
               />
             </div>
             
             <div>
-              <label htmlFor="email" className="block text-sm text-left font-medium text-custom-blue mb-1">Your Email (Optional)</label>
+              <label htmlFor="email" className="block text-xs md:text-sm text-left font-medium text-custom-blue mb-1">Your Email (Optional)</label>
               <input
                 type="email"
                 id="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-3 py-2 bg-gray-900/90 border border-gray-800 rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-custom-blue/60"
+                className="w-full px-3 py-2 bg-gray-900/90 border border-gray-800 text-sm md:text-base rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-custom-blue/60"
                 placeholder="you@example.com"
               />
             </div>
             
             <div>
-              <label htmlFor="message" className="block text-sm text-left font-medium text-custom-blue mb-1">Your Message</label>
+              <label htmlFor="message" className="block text-xs md:text-sm text-left font-medium text-custom-blue mb-1">Your Message</label>
               <textarea
                 id="message"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 required
                 rows={6}
-                className="w-full px-3 py-2 bg-gray-900/90 border border-gray-800 rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-custom-blue/60 resize-none"
+                className="w-full px-3 py-2 bg-gray-900/90 border border-gray-800 text-sm md:text-base rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-custom-blue/60 resize-none"
                 placeholder="Tell us your ideas or feedback..."
               ></textarea>
             </div>
@@ -119,7 +119,7 @@ const ContactContent = () => {
           
           {/* Error message */}
           {submitError && (
-            <div className="mt-4 text-red-400 text-sm">
+            <div className="mt-4 text-red-400 text-sm text-left">
               {submitError}
             </div>
           )}
@@ -129,7 +129,7 @@ const ContactContent = () => {
             <button
               type="submit"
               disabled={isSubmitting}
-              className={`px-6 py-3 bg-primary-blue hover:bg-primary-blue-hover text-white rounded-xl transition-all duration-300 flex items-center justify-center ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
+              className={`px-6 py-3 bg-primary-blue hover:bg-primary-blue-hover text-sm md:text-base text-white rounded-xl transition-all duration-300 flex items-center justify-center ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
             >
               {isSubmitting ? (
                 <>

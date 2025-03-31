@@ -43,29 +43,31 @@ const AboutContent = () => {
 
   return (
     
-    <div className="flex flex-col flex-1 w-full max-w-5xl px-6 py-4 mb-8 lg:py-8 gap-8 md:gap-12 overflow-visible pb-8 fade-in">
+    <div className="flex flex-col flex-1 w-full max-w-5xl px-6 py-4 mb-8 lg:py-8 gap-8 md:gap-12 overflow-visible pb-4 fade-in">
       {/* About Us - Fade In */}
       <section 
-        className={`flex flex-col text-left text-sm lg:text-base w-full max-w-5xl gap-2 lg:gap-4 transition-all duration-700 ease-out ${aboutSectionVisible ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform'}`}>
+        className={`flex flex-col text-left text-sm md:text-base w-full max-w-5xl gap-2 lg:gap-4 transition-all duration-700 ease-out ${aboutSectionVisible ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform'}`}>
           <div className="relative">
             <h1 className="text-2xl font-bold text-custom-blue pt-1"> About Us </h1>
             <div className="absolute -bottom-2 left-0 w-20 h-0.5 bg-gradient-to-r from-custom-blue to-custom-blue/30 rounded-full"></div>
           </div>
 
         <p className="text-gray-300 leading-relaxed mt-5">
-          We're passionate about helping car enthusiasts and curious minds identify vehicles using the latest AI technology.
+            We are a platform designed to help car enthusiasts and curious minds identify vehicles using the latest AI technology. Save your results, share your discoveries, and explore a growing collection of cars with What's That Car.
+
+            {/* Join a community passionate about cars, knowledge-sharing, and discovery. */} 
         </p>
       </section>
 
       {/* How It Works - Slide In From Right */}
       <section 
-        className={`flex flex-col text-left text-sm lg:text-base w-full max-w-5xl gap-2 lg:gap-4 mt-2 transition-all duration-700 ease-out ${howItWorksSectionVisible ? 'opacity-100 transform translate-x-0' : 'opacity-0 transform translate-x-10'}`}>
+        className={`flex flex-col text-left text-sm w-full max-w-5xl gap-2 lg:gap-4 mt-2 transition-all duration-700 ease-out ${howItWorksSectionVisible ? 'opacity-100 transform translate-x-0' : 'opacity-0 transform translate-x-10'}`}>
           <div className="relative">
             <h1 className="text-2xl font-bold text-custom-blue"> How It Works </h1>
             <div className="absolute -bottom-2 left-0 w-20 h-0.5 bg-gradient-to-r from-custom-blue to-custom-blue/30 rounded-full"></div>
           </div>
 
-        <div className="relative flex flex-col gap-8 w-full max-w-3xl ml-4 mt-4">
+        <div className="relative flex flex-col gap-8 w-full max-w-5xl ml-0 md:ml-4 mt-4">
           
           {/* Step 1 */}
           <div className="flex items-center gap-6 transition-all duration-700 ease-out relative z-10">
@@ -75,7 +77,7 @@ const AboutContent = () => {
               </svg>
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="text-base font-semibold text-white mb-2">Upload an Image</h3>
+              <h3 className="text-sm font-semibold text-white mb-2">Upload an Image</h3>
               <p className="text-gray-300 text-sm break-words">Take a photo of a car or upload one to our platform.</p>
             </div>
           </div>
@@ -88,7 +90,7 @@ const AboutContent = () => {
               </svg>
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="text-base font-semibold text-white mb-2">AI Analysis</h3>
+              <h3 className="text-sm font-semibold text-white mb-2">AI Analysis</h3>
               <p className="text-gray-300 text-sm break-words">The latest AI models will identify the make, model, year, and more.</p>
             </div>
           </div>
@@ -101,7 +103,7 @@ const AboutContent = () => {
               </svg>
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="text-base font-semibold text-white mb-2">Get Results</h3>
+              <h3 className="text-sm font-semibold text-white mb-2">Get Results</h3>
               <p className="text-gray-300 text-sm break-words">Receive vehicle details in a clean and organized format.</p>
             </div>
           </div>
@@ -110,13 +112,13 @@ const AboutContent = () => {
 
       {/* Coming Soon - Slide In From Left */}
       <section 
-        className={`flex flex-col text-left text-sm lg:text-base w-full max-w-5xl mt-2 gap-2 lg:gap-4 transition-all duration-700 ease-out ${comingSoonSectionVisible ? 'opacity-100 transform translate-x-0' : 'opacity-0 transform translate-x-10'}`}>
+        className={`flex flex-col text-left text-sm w-full max-w-5xl mt-2 gap-2 lg:gap-4 transition-all duration-700 ease-out ${comingSoonSectionVisible ? 'opacity-100 transform translate-x-0' : 'opacity-0 transform translate-x-10'}`}>
           <div className="relative">
             <h1 className="text-2xl font-bold text-custom-blue mt-2"> Coming Soon... </h1>
             <div className="absolute -bottom-2 left-0 w-20 h-0.5 bg-gradient-to-r from-custom-blue to-custom-blue/30 rounded-full"></div>
           </div>
         
-        <div className="relative flex flex-col gap-8 w-full max-w-4xl ml-4 mt-4">
+        <div className="relative flex flex-col gap-8 w-full max-w-5xl ml-0 md:ml-4 mt-4">
           {/* Comments Feature */}
           <div className="flex items-center gap-6 transition-all duration-700 ease-out relative z-10">
             <div className="flex-shrink-0 w-12 h-12 rounded-full bg-gray-900/70 border border-white/10 flex items-center justify-center mt-1.5">
@@ -125,8 +127,8 @@ const AboutContent = () => {
               </svg>
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="text-base font-semibold text-white mb-2"> Comment Sections </h3>
-              <p className="text-gray-300 text-sm break-words"> Engage with the community in comment threads. Share your knowledge, ask questions, and connect with others. </p>
+              <h3 className="text-sm font-semibold text-white mb-2"> Comment Sections </h3>
+              <p className="text-gray-300 break-words"> Share your knowledge, ask questions, and connect with others. </p>
             </div>
           </div>
           
@@ -138,8 +140,21 @@ const AboutContent = () => {
               </svg>
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="text-base font-semibold text-white mb-2"> View Similar Results </h3>
+              <h3 className="text-sm font-semibold text-white mb-2"> View Similar Results </h3>
               <p className="text-gray-300 text-sm break-words"> View vehicles that other users found that are similar to yours. </p>
+            </div>
+          </div>
+          
+          {/* User Profiles & Following Feature */}
+          <div className="flex items-center gap-6 transition-all duration-700 ease-out relative z-10">
+            <div className="flex-shrink-0 w-12 h-12 rounded-full bg-gray-900/70 border border-white/10 flex items-center justify-center mt-1.5">
+              <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm font-semibold text-white mb-2"> User Profiles & Following </h3>
+              <p className="text-gray-300 text-sm break-words"> View and follow other users to see their profiles and car collections.</p>
             </div>
           </div>
           
@@ -151,13 +166,13 @@ const AboutContent = () => {
               </svg>
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="text-base font-semibold text-white mb-2"> Have Any Other Ideas? </h3>
+              <h3 className="text-sm font-semibold text-white mb-2"> Have Any Other Ideas? </h3>
               <p className="text-gray-300 text-sm break-words"> 
-                We'd love to hear your suggestions for new features! Visit our 
+                We'd love to hear your suggestions! Visit our 
                 <Link href="/contact" className="text-custom-blue hover:text-custom-blue/85 transition-colors mx-1">
                   contact
                 </Link> 
-                page to share your ideas.
+                page.
               </p>
             </div>
           </div>
@@ -166,7 +181,7 @@ const AboutContent = () => {
 
       {/* CTA - Slide Up From Bottom */}
       <section 
-        className={`flex flex-col text-left text-sm lg:text-base w-full max-w-5xl gap-2 lg:gap-4 mt-2 mb-4 transition-all duration-700 ease-out ${ctaSectionVisible ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-10'}`}>
+        className={`flex flex-col text-left text-sm w-full max-w-5xl gap-2 lg:gap-4 mt-2 transition-all duration-700 ease-out ${ctaSectionVisible ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-10'}`}>
           <div className="relative">
             <h1 className="text-2xl font-bold text-custom-blue"> Ready to Identify a Car? </h1>
             <div className="absolute -bottom-2 left-0 w-20 h-0.5 bg-gradient-to-r from-custom-blue to-custom-blue/30 rounded-full"></div>

@@ -193,13 +193,13 @@ const ProfileEditContent = () => {
 
   return (
     <div className="flex flex-col flex-1 w-full max-w-5xl px-6 py-4 mb-8 lg:py-8 fade-in">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-        <div className="relative mb-6 md:mb-4">
+      <div className="flex flex-row items-center justify-between mb-6">
+        <div className="relative mb-4 md:mb-0">
           <h1 className="text-2xl font-bold text-custom-blue mb-0 md:mb-0 text-left"> Edit Your Profile </h1>
           <div className="absolute -bottom-2 left-0 w-20 h-0.5 bg-gradient-to-r from-custom-blue to-custom-blue/30 rounded-full"></div>
         </div>
         
-        <div className="flex space-x-3 mb-4">
+        <div className="flex space-x-3 pb-3">
           <Link
             href="/profile"
             className="flex items-center px-3 pl-2 py-2 text-sm border border-gray-800 hover:border-custom-blue/30 rounded-xl hover:bg-blue-950/20 text-white transition-all duration-300 ease-in-out"
@@ -207,12 +207,12 @@ const ProfileEditContent = () => {
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 text-custom-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19l-7-7 7-7" />
             </svg>
-            Back to Profile
+            Back
           </Link>
         </div>
       </div>
 
-      <div className="bg-gray-950/90 backdrop-blur-sm border border-gray-900 rounded-2xl p-6 shadow-md shadow-blue-300/10">
+      <div className="bg-gray-950/90 backdrop-blur-sm border border-gray-900 rounded-2xl p-6 shadow-md shadow-blue-300/10 mt-4">
 
         <div className="flex flex-col md:flex-row gap-8">
 
@@ -274,20 +274,20 @@ const ProfileEditContent = () => {
           {/* Form input fields */}
           <div className="flex-1 space-y-5">
             <div>
-              <label htmlFor="username" className="block text-base text-left font-medium text-custom-blue mb-2"> Display Username </label>
+              <label htmlFor="username" className="block text-sm text-left font-medium text-custom-blue mb-2"> Display Username </label>
               <input
                 id="username"
                 name="username"
                 type="text"
                 value={profile.username}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 bg-gray-900/90 border border-gray-800 rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-custom-blue/60 resize-none"
+                className="w-full px-3 py-2 text-sm bg-gray-900/90 border border-gray-800 rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-custom-blue/60 resize-none"
                 placeholder=""
               />
             </div>
 
             <div>
-              <h3 className="text-base font-medium text-custom-blue mb-2 flex items-center">
+              <h3 className="text-sm font-medium text-custom-blue mb-2 flex items-center">
                 Bio
                 <span className="ml-2 px-2 mb-0.5 py-0.5 text-xs bg-blue-900/40 text-gray-300 border border-blue-800/70 rounded-full">Coming Soon</span>
               </h3>
@@ -298,7 +298,7 @@ const ProfileEditContent = () => {
                 disabled
                 value="This feature will be available in a future update."
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 bg-gray-900/90 border border-gray-800 rounded-xl text-gray-500 focus:outline-none resize-none cursor-not-allowed"
+                className="w-full px-3 py-2 text-sm bg-gray-900/90 border border-gray-800 rounded-xl text-gray-500 focus:outline-none resize-none cursor-not-allowed"
               />
 
               {statusMessage && (
@@ -331,12 +331,12 @@ const ProfileEditContent = () => {
         <div className="mt-8 pt-6 border-t border-gray-800 flex justify-end">
           <div className="flex space-x-3">
             {/* Cancel and save buttons */}
-            <Link href="/profile" className="flex px-5 py-2.5 border border-gray-800 rounded-xl text-white transition-all duration-300 hover:bg-gray-800/50 transition-all duration-300 ease-in-out transform hover:scale-[1.05]"> Cancel </Link>
+            <Link href="/profile" className="flex px-5 py-2.5 border border-gray-800 rounded-xl text-sm text-white transition-all duration-300 hover:bg-gray-800/50 transition-all duration-300 ease-in-out transform hover:scale-[1.05]"> Cancel </Link>
             <button
               type="button"
               onClick={handleSaveProfile}
               disabled={saving}
-              className="flex items-center px-5 py-2.5 font-medium rounded-xl bg-primary-blue hover:bg-primary-blue-hover text-white transition-all duration-300 ease-in-out transform hover:scale-[1.02] shadow-md shadow-blue-500/20 disabled:opacity-50 disabled:hover:scale-100"
+              className="flex items-center px-5 py-2.5 font-medium rounded-xl text-sm bg-primary-blue hover:bg-primary-blue-hover text-white transition-all duration-300 ease-in-out transform hover:scale-[1.02] shadow-md shadow-blue-500/20 disabled:opacity-50 disabled:hover:scale-100"
             >
               {saving ? (
                 <>

@@ -462,7 +462,7 @@ const HomeContent = () => {
                   draggable={false}
                   src={displayImage ? image : placeholderImg}
                   alt="Uploaded Image"
-                  width={350}
+                  width={300}
                   height={450}
                   style={{ objectFit: "contain" }}
                   className={`rounded-2xl border border-gray-700/80 bg-gray-950/80 shadow-md shadow-blue-300/10 transition-all duration-500 ease-in-out ${imageTransitioning ? 'opacity-70 scale-[0.98]' : 'opacity-100 scale-100'}`}

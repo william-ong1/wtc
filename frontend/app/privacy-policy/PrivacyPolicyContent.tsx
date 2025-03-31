@@ -9,7 +9,7 @@ export default function PrivacyPolicyContent() {
         <h1 className="text-2xl font-bold mb-2 text-custom-blue pb-7 mt-1"> Privacy Policy </h1>
       </div>
       
-      <div className="flex flex-col text-left text-sm lg:text-base w-full max-w-5xl gap-8">
+      <div className="flex flex-col text-left text-sm w-full max-w-5xl gap-8">
         <section>
           <div className="relative mb-6">
             <h2 className="text-xl font-bold text-custom-blue">Information We Collect</h2>

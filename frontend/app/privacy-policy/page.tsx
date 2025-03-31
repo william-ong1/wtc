@@ -6,7 +6,7 @@ export const metadata = {
 
 export default function PrivacyPolicy() {
   return (
-    <div className="flex flex-row justify-center items-start text-left overflow-x-hidden w-full pb-8">
+    <div className="flex flex-row justify-center items-start text-left overflow-x-hidden w-full">
       <PrivacyPolicyContent />
     </div>
   );

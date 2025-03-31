@@ -263,20 +263,20 @@ const SavedContent: React.FC = () => {
 
   return (
     <div className="flex flex-col flex-1 w-full max-w-5xl px-6 py-4 mb-8 lg:py-8 fade-in">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-      <div className="relative mb-6 md:mb-0 ">
+      <div className="flex flex-row items-center justify-between mb-6">
+        <div className="relative mb-4 md:mb-0 ">
           <h1 className="text-2xl font-bold text-custom-blue mb-0 md:mb-0 text-left"> Saved Cars </h1>
           <div className="absolute -bottom-2 left-0 w-20 h-0.5 bg-gradient-to-r from-custom-blue to-custom-blue/30 rounded-full"></div>
         </div>
         
         <div className="flex items-center self-start md:self-auto">
-          <span className="text-gray-400 text-sm mr-2">Sort by</span>
+          {/* <span className="text-gray-400 text-xs md:text-sm mr-2"> Sort by </span> */}
 
           {/* Dropdown */}
           <div className="relative inline-block" ref={dropdownRef}>
             <button 
               onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="flex items-center justify-between text-sm min-w-[140px] border border-gray-800 text-white py-2 px-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 hover:border-custom-blue/30  hover:bg-blue-950/20 hover:shadow-sm hover:shadow-blue-500/10 transition-all duration-200"
+              className="flex items-center justify-between text-xs md:text-sm min-w-[140px] border border-gray-800 text-white py-2 px-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 hover:border-custom-blue/30  hover:bg-blue-950/20 hover:shadow-sm hover:shadow-blue-500/10 transition-all duration-200"
             >
               <span className="flex items-center">
                 {sortOption === 'newest' && (
@@ -300,14 +300,14 @@ const SavedContent: React.FC = () => {
               >
                 <button 
                   onClick={() => handleSortChange('newest')}
-                  className={`w-full text-left px-4 py-2.5 hover:bg-blue-950/30 transition-colors text-sm flex items-center ${sortOption === 'newest' ? 'bg-blue-950/40 text-white' : 'text-white'}`}
+                  className={`w-full text-left px-4 py-2.5 hover:bg-blue-950/30 transition-colors text-xs md:text-sm flex items-center ${sortOption === 'newest' ? 'bg-blue-950/40 text-white' : 'text-white'}`}
                 >
                   <Image src="/icons/sort-newest.svg" alt="Newest first" width={16} height={16} className="mr-2" />
                   Newest First
                 </button>
                 <button 
                   onClick={() => handleSortChange('oldest')}
-                  className={`w-full text-left px-4 py-2.5 hover:bg-blue-950/30 transition-colors text-sm flex items-center ${sortOption === 'oldest' ? 'bg-blue-950/40 text-white' : 'text-white'}`}
+                  className={`w-full text-left px-4 py-2.5 hover:bg-blue-950/30 transition-colors text-xs md:text-sm flex items-center ${sortOption === 'oldest' ? 'bg-blue-950/40 text-white' : 'text-white'}`}
                 >
                   <Image src="/icons/sort-oldest.svg" alt="Oldest first" width={16} height={16} className="mr-2" />
                   Oldest First
