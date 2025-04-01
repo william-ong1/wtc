@@ -16,6 +16,7 @@ import requests
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+import asyncio
 
 # Load environment variables
 load_dotenv()
@@ -106,10 +107,9 @@ class ContactForm(BaseModel):
     email: Optional[str] = ""
     message: str
 
-
 def process_image(image: UploadFile) -> tuple:
     """
-    Process an uploaded image.
+    Process an uploaded image with optimized memory usage.
     
     Args:
         image (UploadFile): The image as a file.
@@ -118,48 +118,64 @@ def process_image(image: UploadFile) -> tuple:
         A tuple containing the processed PIL image and the original image bytes.
     """
 
-    # Read image and retrieve bytes
-    image_data = image.file.read()
-    image_bytes = io.BytesIO(image_data)
-
     try:
-        pil_image = Image.open(image_bytes)
-    except Image.UnidentifiedImageError:
-        # Use pillow-heif to convert image if it's HEIF (common file type for Apple images)
-        heif_image = pillow_heif.open_heif(image_bytes)
-        pil_image = Image.frombytes(heif_image.mode, heif_image.size, heif_image.data)
+        # Read image and retrieve bytes
+        image_data = image.file.read()
+        image_bytes = io.BytesIO(image_data)
 
-        # Convert HEIC to JPEG for storage (allow displaying of HEIC images on non-Safari browsers)
-        buffer = io.BytesIO()
-        pil_image.save(buffer, format="JPEG")
-        image_data = buffer.getvalue()
+        try:
+            pil_image = Image.open(image_bytes)
+        except Image.UnidentifiedImageError:
+            # Use pillow-heif to convert image if it's HEIF (common file type for Apple images)
+            heif_image = pillow_heif.open_heif(image_bytes)
+            pil_image = Image.frombytes(heif_image.mode, heif_image.size, heif_image.data)
 
-    # Ensure that image is RGB
-    pil_image = pil_image.convert('RGB')
-    
-    # Compress large images to reduce memory usage
-    width, height = pil_image.size
-    max_size = 1200  # Maximum dimension size
-    
-    # Only resize if the image is larger than max_size
-    if width > max_size or height > max_size:
-        # Calculate new dimensions while preserving aspect ratio
-        if width > height:
-            new_width = max_size
-            new_height = int(height * (max_size / width))
-        else:
-            new_height = max_size
-            new_width = int(width * (max_size / height))
+            # Convert HEIC to JPEG for storage (allow displaying of HEIC images on non-Safari browsers)
+            buffer = io.BytesIO()
+            pil_image.save(buffer, format="JPEG", quality=75)
+            image_data = buffer.getvalue()
+            buffer.close()
+            del buffer
+
+        # Ensure that image is RGB
+        pil_image = pil_image.convert('RGB')
         
-        # Resize the image
-        pil_image = pil_image.resize((new_width, new_height), Image.LANCZOS)
+        # Compress large images to reduce memory usage
+        max_size = 800
         
-        # Create new compressed image data if we're returning image_data
+        # Always resize to optimize memory usage
+        original_width, original_height = pil_image.size
+        if original_width > max_size or original_height > max_size:
+            # Calculate new dimensions while preserving aspect ratio
+            if original_width > original_height:
+                new_width = max_size
+                new_height = int(original_height * (max_size / original_width))
+            else:
+                new_height = max_size
+                new_width = int(original_width * (max_size / original_height))
+            
+            # Resize the image with higher quality downsampling
+            pil_image = pil_image.resize((new_width, new_height), Image.LANCZOS)
+        
+        # Always recompress the image to ensure consistent memory usage
         buffer = io.BytesIO()
-        pil_image.save(buffer, format="JPEG", quality=85)
+        pil_image.save(buffer, format="JPEG", quality=75)
         image_data = buffer.getvalue()
-
-    return pil_image, image_data
+        buffer.close()
+        del buffer
+        
+        # Log compression stats for debugging
+        # original_size = len(image_data)
+        # compressed_size = len(image_data)
+        # compression_ratio = original_size / compressed_size if compressed_size > 0 else 0
+        # print(f"Image compression: {original_width}x{original_height} ({original_size/1024:.1f}KB) → " +
+        #       f"{pil_image.width}x{pil_image.height} ({compressed_size/1024:.1f}KB), " +
+        #       f"Ratio: {compression_ratio:.1f}x")
+        
+        return pil_image, image_data
+    except Exception as e:
+        print(f"Error processing image: {str(e)}")
+        raise e
 
 
 def generate_image_hash(image_data) -> str:
@@ -212,7 +228,7 @@ async def upload_to_s3(image_data, user_id, image_hash) -> str:
 @app.post("/predict/")
 async def predict(image: UploadFile) -> Dict[str, Any]:
     """
-    Identify the car in an image with Gemini.
+    Identify the car in an image with Gemini, with optimized memory usage.
 
     Args:
         image (UploadFile): The image as a file.
@@ -221,26 +237,45 @@ async def predict(image: UploadFile) -> Dict[str, Any]:
         The car information in JSON format containing keys for the car's make, model, year, rarity, and link to additional information with the key "car" if "success" is True.
     """
 
+    # Set timeout duration in seconds
+    TIMEOUT_SECONDS = 25
+    pil_image = None
+    
     try:
-        # Process the image first 
-        image, _ = process_image(image)
+        # Process the image with optimized memory usage
+        pil_image, _ = process_image(image)
         
-        # Gemini prompt
+        # Gemini prompt - optimized to be more concise
         prompt = """
-            Please analyze this car image and provide the following details in a structured format:
-            - Make (Manufacturer)
-            - Model (Do not include any information that isn't needed, just the model name, number, and trim if you are very confident in the trim)
-            - Exact Year (Be exact if possible; if the exact year cannot be determined, provide the possible year range)
-            - Rarity (Choose one: Unknown (if there is no car or unknown info), Common, Rare, Very Rare, or Extremely Rare)
-            - Link (Wikipedia link for the car)
-
-            If there is no car, return all details as "n/a".
-
-            Please ensure the response is formatted as a JSON object with the following keys: make, model, year, rarity, link
+            Analyze this car image and provide these details in JSON format:
+            - make: Manufacturer name
+            - model: Model name/number (exclude unnecessary details)
+            - year: Exact year or range if uncertain
+            - rarity: Unknown, Common, Rare, Very Rare, or Extremely Rare
+            - link: Wikipedia link to the car
+            
+            If there are multiple cars in the image, focus on the most prominent one.
+            If no car visible, use "n/a" for all fields. For any missing information, use "n/a" as well.
+            
+            Return a single JSON object, not an array.
         """
 
-        # Generate response with Gemini
-        response = model.generate_content([prompt, image])
+        # Run the prediction with Gemini
+        def run_prediction():
+            return model.generate_content([prompt, pil_image])
+        
+        # Run the prediction with a timeout
+        loop = asyncio.get_event_loop()
+        response = await asyncio.wait_for(
+            loop.run_in_executor(None, run_prediction),
+            timeout=TIMEOUT_SECONDS
+        )
+        
+        # Clean up memory
+        del pil_image
+        pil_image = None
+        import gc
+        gc.collect()
 
         # Parse the response text as JSON
         response_text = response.text.strip()
@@ -251,6 +286,11 @@ async def predict(image: UploadFile) -> Dict[str, Any]:
             response_text = response_text[:-3]
         
         parsed_response = json.loads(response_text)
+                
+        # Handle the case where the model returns an array instead of a single object
+        if isinstance(parsed_response, list) and len(parsed_response) > 0:
+            print("Warning: Gemini returned multiple cars. Using the first one.")
+            parsed_response = parsed_response[0]
         
         # Return the parsed details
         car = {
@@ -260,11 +300,22 @@ async def predict(image: UploadFile) -> Dict[str, Any]:
             "rarity": parsed_response.get("rarity"),
             "link": parsed_response.get("link")
         }
+        
         return {"success": True, "car": car}
+    except asyncio.TimeoutError:
+        print(f"Prediction timed out after {TIMEOUT_SECONDS} seconds")
+        return {"success": False, "error": f"Request timed out after {TIMEOUT_SECONDS} seconds. Please try again with a smaller image or try later."}
     except json.JSONDecodeError as e:
-        return {"success": False, "error": "Failed to parse response as JSON", "response_text": response.text}
+        print(f"JSON parse error: {str(e)}")
+        return {"success": False, "error": "Failed to parse response as JSON", "response_text": response.text if 'response' in locals() else "No response"}
     except Exception as e:
+        print(f"Prediction error: {str(e)}")
         return {"success": False, "error": str(e)}
+    finally:
+        # Make sure image is cleaned up even if there's an error
+        if pil_image is not None:
+            del pil_image
+            gc.collect()
 
 
 @app.post("/save-car/")

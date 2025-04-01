@@ -144,6 +144,15 @@ const HomeContent = () => {
       }
     }
 
+    // Compress image before sending to server
+    try {
+      const compressedFile = await compressImage(processedFile);
+      processedFile = compressedFile;
+    } catch (error) {
+      console.error('Error compressing image:', error);
+      // Continue with the original file if compression fails
+    }
+
     const objectUrl = URL.createObjectURL(processedFile);
     const formData = new FormData();
     formData.append("image", processedFile);
@@ -185,6 +194,77 @@ const HomeContent = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Compress images client-side before uploading
+  const compressImage = async (file: File): Promise<File> => {
+    return new Promise<File>((resolve, reject) => {
+      // Create image element to get dimensions
+      const img: HTMLImageElement = document.createElement('img');
+      img.src = URL.createObjectURL(file);
+      
+      img.onload = () => {
+        // Release the object URL
+        URL.revokeObjectURL(img.src);
+        
+        const MAX_WIDTH = 1000;
+        const MAX_HEIGHT = 1000;
+        
+        let width = img.width;
+        let height = img.height;
+        
+        // Calculate new dimensions if needed
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height = Math.round(height * (MAX_WIDTH / width));
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width = Math.round(width * (MAX_HEIGHT / height));
+            height = MAX_HEIGHT;
+          }
+        }
+        
+        // Create canvas for resizing
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        
+        // Draw and compress the image
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('Could not get canvas context'));
+          return;
+        }
+        
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // Convert to blob with quality reduction
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              // Create a new file from the blob
+              const compressedFile = new File(
+                [blob], 
+                file.name, 
+                { type: 'image/jpeg' }
+              );
+              resolve(compressedFile);
+            } else {
+              reject(new Error('Canvas to Blob conversion failed'));
+            }
+          },
+          'image/jpeg',
+          0.75 // quality parameter
+        );
+      };
+      
+      img.onerror = () => {
+        URL.revokeObjectURL(img.src);
+        reject(new Error('Failed to load image'));
+      };
+    });
   };
 
   // Handle file input change
