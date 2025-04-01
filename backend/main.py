@@ -136,6 +136,28 @@ def process_image(image: UploadFile) -> tuple:
 
     # Ensure that image is RGB
     pil_image = pil_image.convert('RGB')
+    
+    # Compress large images to reduce memory usage
+    width, height = pil_image.size
+    max_size = 1200  # Maximum dimension size
+    
+    # Only resize if the image is larger than max_size
+    if width > max_size or height > max_size:
+        # Calculate new dimensions while preserving aspect ratio
+        if width > height:
+            new_width = max_size
+            new_height = int(height * (max_size / width))
+        else:
+            new_height = max_size
+            new_width = int(width * (max_size / height))
+        
+        # Resize the image
+        pil_image = pil_image.resize((new_width, new_height), Image.LANCZOS)
+        
+        # Create new compressed image data if we're returning image_data
+        buffer = io.BytesIO()
+        pil_image.save(buffer, format="JPEG", quality=85)
+        image_data = buffer.getvalue()
 
     return pil_image, image_data
 
@@ -199,27 +221,27 @@ async def predict(image: UploadFile) -> Dict[str, Any]:
         The car information in JSON format containing keys for the car's make, model, year, rarity, and link to additional information with the key "car" if "success" is True.
     """
 
-    # Process the image first 
-    image, _ = process_image(image)
-    
-    # Gemini prompt
-    prompt = """
-        Please analyze this car image and provide the following details in a structured format:
-        - Make (Manufacturer)
-        - Model (Do not include any information that isn't needed, just the model name, number, and trim if you are very confident in the trim)
-        - Exact Year (Be exact if possible; if the exact year cannot be determined, provide the possible year range)
-        - Rarity (Choose one: Unknown (if there is no car or unknown info), Common, Rare, Very Rare, or Extremely Rare)
-        - Link (Wikipedia link for the car)
-
-        If there is no car, return all details as "n/a".
-
-        Please ensure the response is formatted as a JSON object with the following keys: make, model, year, rarity, link
-    """
-
-    # Generate response with Gemini
-    response = model.generate_content([prompt, image])
-
     try:
+        # Process the image first 
+        image, _ = process_image(image)
+        
+        # Gemini prompt
+        prompt = """
+            Please analyze this car image and provide the following details in a structured format:
+            - Make (Manufacturer)
+            - Model (Do not include any information that isn't needed, just the model name, number, and trim if you are very confident in the trim)
+            - Exact Year (Be exact if possible; if the exact year cannot be determined, provide the possible year range)
+            - Rarity (Choose one: Unknown (if there is no car or unknown info), Common, Rare, Very Rare, or Extremely Rare)
+            - Link (Wikipedia link for the car)
+
+            If there is no car, return all details as "n/a".
+
+            Please ensure the response is formatted as a JSON object with the following keys: make, model, year, rarity, link
+        """
+
+        # Generate response with Gemini
+        response = model.generate_content([prompt, image])
+
         # Parse the response text as JSON
         response_text = response.text.strip()
         # Remove any markdown code block markers if present
