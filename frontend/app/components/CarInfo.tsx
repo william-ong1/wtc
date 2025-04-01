@@ -61,7 +61,7 @@ const CarInfo = ({ make, model, year, rarity, link, onSaveResults, isSaved = fal
     const checkLogo = async () => {
       if (make && make !== "n/a") {
         setIsLoading(true);
-        const doesExist = await checkImageExists(`https://raw.githubusercontent.com/dangnelson/car-makes-icons/2a7f574ce813e1eeddcca955c87847bc5baa28b6/svgs/${make.toLowerCase().replace(/ /g, "%20")}.svg`);
+        const doesExist = await checkImageExists(`https://raw.githubusercontent.com/dangnelson/car-makes-icons/2a7f574ce813e1eeddcca955c87847bc5baa28b6/svgs/${make.toLowerCase().replace(/ /g, "%20").replace("-", "%20")}.svg`);
         setImageExists(doesExist);
         setIsLoading(false);
       } else {
@@ -71,7 +71,7 @@ const CarInfo = ({ make, model, year, rarity, link, onSaveResults, isSaved = fal
     checkLogo();
   }, [make]);
   
-  const imageUrl = make && make !== "n/a" && imageExists ? `https://raw.githubusercontent.com/dangnelson/car-makes-icons/2a7f574ce813e1eeddcca955c87847bc5baa28b6/svgs/${make.toLowerCase().replace(/ /g, "%20")}.svg` : tempLogo;
+  const imageUrl = make && make !== "n/a" && imageExists ? `https://raw.githubusercontent.com/dangnelson/car-makes-icons/2a7f574ce813e1eeddcca955c87847bc5baa28b6/svgs/${make.toLowerCase().replace(/ /g, "%20").replace("-", "%20")}.svg` : tempLogo;
 
 
   // Get the color of the label based on rarity
