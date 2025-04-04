@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import FastAPI, File, UploadFile, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image
 import io
@@ -8,6 +8,8 @@ import os
 from dotenv import load_dotenv
 import json
 import boto3
+import boto3.session
+from boto3.dynamodb.conditions import Key, Attr
 import hashlib
 import base64
 from pydantic import BaseModel
@@ -16,6 +18,9 @@ import requests
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+import asyncio
+from cachetools import TTLCache
+from functools import lru_cache
 
 # Load environment variables
 load_dotenv()
@@ -37,41 +42,51 @@ app.add_middleware(
 	allow_headers=["*"],
 )
 
-# Configure Gemini API (Gemini 2.0 Flash)
-genai.configure(api_key=os.getenv('GOOGLE_API_KEY'))
-model = genai.GenerativeModel('gemini-2.0-flash')
+# Connection pool for AWS services
+@lru_cache(maxsize=1)
+def get_boto3_session():
+    """Create and cache a boto3 session to reuse connections"""
+    return boto3.session.Session(
+        region_name=aws_region,
+        aws_access_key_id=aws_access_key,
+        aws_secret_access_key=aws_secret_key
+    )
+
+# Get resource and client from the session pool
+def get_dynamodb():
+    """Get a DynamoDB resource from the connection pool"""
+    session = get_boto3_session()
+    return session.resource('dynamodb')
+
+def get_s3_client():
+    """Get an S3 client from the connection pool"""
+    session = get_boto3_session()
+    return session.client('s3')
+
+def get_cognito_client():
+    """Get a Cognito client from the connection pool"""
+    session = get_boto3_session()
+    return session.client('cognito-idp')
+
+# Cache for frequently accessed data (5 minute expiry, max 100 items)
+username_cache = TTLCache(maxsize=100, ttl=300)
+
+# Cache for profile photos (10 minute expiry, max 50 items)
+profile_photo_cache = TTLCache(maxsize=50, ttl=600)
 
 # Configure AWS services
 aws_region = os.getenv('AWS_REGION')
 aws_access_key = os.getenv('AWS_ACCESS_KEY_ID')
 aws_secret_key = os.getenv('AWS_SECRET_ACCESS_KEY')
 
-# DynamoDB setup for car posts and user info
-dynamodb = boto3.resource(
-    'dynamodb', 
-    region_name=aws_region,
-    aws_access_key_id=aws_access_key,
-    aws_secret_access_key=aws_secret_key
-)
-cars_table = dynamodb.Table(os.getenv('DYNAMODB_TABLE_NAME'))
-users_table = dynamodb.Table(os.getenv('DYNAMODB_USERS_TABLE_NAME'))
+# Configure Gemini API (Gemini 2.0 Flash)
+genai.configure(api_key=os.getenv('GOOGLE_API_KEY'))
+model = genai.GenerativeModel('gemini-2.0-flash')
 
-# Cognito setup for auth
-cognito_client = boto3.client(
-    'cognito-idp',
-    region_name=aws_region,
-    aws_access_key_id=aws_access_key,
-    aws_secret_access_key=aws_secret_key
-)
-
-# S3 setup for image storage
-s3_client = boto3.client(
-    's3',
-    region_name=aws_region,
-    aws_access_key_id=aws_access_key,
-    aws_secret_access_key=aws_secret_key
-)
+# DynamoDB setup with connection pooling
 S3_BUCKET_NAME = os.getenv('S3_BUCKET_NAME')
+DYNAMODB_TABLE_NAME = os.getenv('DYNAMODB_TABLE_NAME')
+DYNAMODB_USERS_TABLE_NAME = os.getenv('DYNAMODB_USERS_TABLE_NAME')
 
 # Car info data
 class CarInfo(BaseModel):
@@ -106,10 +121,9 @@ class ContactForm(BaseModel):
     email: Optional[str] = ""
     message: str
 
-
 def process_image(image: UploadFile) -> tuple:
     """
-    Process an uploaded image.
+    Process an uploaded image with optimized memory usage.
     
     Args:
         image (UploadFile): The image as a file.
@@ -118,26 +132,64 @@ def process_image(image: UploadFile) -> tuple:
         A tuple containing the processed PIL image and the original image bytes.
     """
 
-    # Read image and retrieve bytes
-    image_data = image.file.read()
-    image_bytes = io.BytesIO(image_data)
-
     try:
-        pil_image = Image.open(image_bytes)
-    except Image.UnidentifiedImageError:
-        # Use pillow-heif to convert image if it's HEIF (common file type for Apple images)
-        heif_image = pillow_heif.open_heif(image_bytes)
-        pil_image = Image.frombytes(heif_image.mode, heif_image.size, heif_image.data)
+        # Read image and retrieve bytes
+        image_data = image.file.read()
+        image_bytes = io.BytesIO(image_data)
 
-        # Convert HEIC to JPEG for storage (allow displaying of HEIC images on non-Safari browsers)
+        try:
+            pil_image = Image.open(image_bytes)
+        except Image.UnidentifiedImageError:
+            # Use pillow-heif to convert image if it's HEIF (common file type for Apple images)
+            heif_image = pillow_heif.open_heif(image_bytes)
+            pil_image = Image.frombytes(heif_image.mode, heif_image.size, heif_image.data)
+
+            # Convert HEIC to JPEG for storage (allow displaying of HEIC images on non-Safari browsers)
+            buffer = io.BytesIO()
+            pil_image.save(buffer, format="JPEG", quality=75)
+            image_data = buffer.getvalue()
+            buffer.close()
+            del buffer
+
+        # Ensure that image is RGB
+        pil_image = pil_image.convert('RGB')
+        
+        # Compress large images to reduce memory usage
+        max_size = 800
+        
+        # Always resize to optimize memory usage
+        original_width, original_height = pil_image.size
+        if original_width > max_size or original_height > max_size:
+            # Calculate new dimensions while preserving aspect ratio
+            if original_width > original_height:
+                new_width = max_size
+                new_height = int(original_height * (max_size / original_width))
+            else:
+                new_height = max_size
+                new_width = int(original_width * (max_size / original_height))
+            
+            # Resize the image with higher quality downsampling
+            pil_image = pil_image.resize((new_width, new_height), Image.LANCZOS)
+        
+        # Always recompress the image to ensure consistent memory usage
         buffer = io.BytesIO()
-        pil_image.save(buffer, format="JPEG")
+        pil_image.save(buffer, format="JPEG", quality=75)
         image_data = buffer.getvalue()
-
-    # Ensure that image is RGB
-    pil_image = pil_image.convert('RGB')
-
-    return pil_image, image_data
+        buffer.close()
+        del buffer
+        
+        # Log compression stats for debugging
+        # original_size = len(image_data)
+        # compressed_size = len(image_data)
+        # compression_ratio = original_size / compressed_size if compressed_size > 0 else 0
+        # print(f"Image compression: {original_width}x{original_height} ({original_size/1024:.1f}KB) → " +
+        #       f"{pil_image.width}x{pil_image.height} ({compressed_size/1024:.1f}KB), " +
+        #       f"Ratio: {compression_ratio:.1f}x")
+        
+        return pil_image, image_data
+    except Exception as e:
+        print(f"Error processing image: {str(e)}")
+        raise e
 
 
 def generate_image_hash(image_data) -> str:
@@ -168,6 +220,9 @@ async def upload_to_s3(image_data, user_id, image_hash) -> str:
     """
 
     try:
+        # Get a connection from the pool
+        s3_client = get_s3_client()
+        
         # Create a unique key for the S3 object
         s3_key = f"{user_id}/{image_hash}.jpg"
         
@@ -184,13 +239,14 @@ async def upload_to_s3(image_data, user_id, image_hash) -> str:
         s3_url = f"https://{S3_BUCKET_NAME}.s3.{aws_region}.amazonaws.com/{s3_key}"
         return s3_url
     except Exception as e:
+        print(f"Error uploading to S3: {str(e)}")
         raise e
 
 
 @app.post("/predict/")
 async def predict(image: UploadFile) -> Dict[str, Any]:
     """
-    Identify the car in an image with Gemini.
+    Identify the car in an image with Gemini, with optimized memory usage.
 
     Args:
         image (UploadFile): The image as a file.
@@ -199,27 +255,46 @@ async def predict(image: UploadFile) -> Dict[str, Any]:
         The car information in JSON format containing keys for the car's make, model, year, rarity, and link to additional information with the key "car" if "success" is True.
     """
 
-    # Process the image first 
-    image, _ = process_image(image)
+    # Set timeout duration in seconds
+    TIMEOUT_SECONDS = 25
+    pil_image = None
     
-    # Gemini prompt
-    prompt = """
-        Please analyze this car image and provide the following details in a structured format:
-        - Make (Manufacturer)
-        - Model (Do not include any information that isn't needed, just the model name, number, and trim if you are very confident in the trim)
-        - Exact Year (Be exact if possible; if the exact year cannot be determined, provide the possible year range)
-        - Rarity (Choose one: Unknown (if there is no car or unknown info), Common, Rare, Very Rare, or Extremely Rare)
-        - Link (Wikipedia link for the car)
-
-        If there is no car, return all details as "n/a".
-
-        Please ensure the response is formatted as a JSON object with the following keys: make, model, year, rarity, link
-    """
-
-    # Generate response with Gemini
-    response = model.generate_content([prompt, image])
-
     try:
+        # Process the image with optimized memory usage
+        pil_image, _ = process_image(image)
+        
+        # Gemini prompt - optimized to be more concise
+        prompt = """
+            Analyze this car image and provide these details in JSON format:
+            - make: Manufacturer name
+            - model: Model name/number (exclude unnecessary details)
+            - year: Exact year or range if uncertain
+            - rarity: Unknown, Common, Rare, Very Rare, or Extremely Rare
+            - link: Wikipedia link to the car
+            
+            If there are multiple cars in the image, focus on the most prominent one.
+            If no car visible, use "n/a" for all fields. For any missing information, use "n/a" as well.
+            
+            Return a single JSON object, not an array.
+        """
+
+        # Run the prediction with Gemini
+        def run_prediction():
+            return model.generate_content([prompt, pil_image])
+        
+        # Run the prediction with a timeout
+        loop = asyncio.get_event_loop()
+        response = await asyncio.wait_for(
+            loop.run_in_executor(None, run_prediction),
+            timeout=TIMEOUT_SECONDS
+        )
+        
+        # Clean up memory
+        del pil_image
+        pil_image = None
+        import gc
+        gc.collect()
+
         # Parse the response text as JSON
         response_text = response.text.strip()
         # Remove any markdown code block markers if present
@@ -229,6 +304,11 @@ async def predict(image: UploadFile) -> Dict[str, Any]:
             response_text = response_text[:-3]
         
         parsed_response = json.loads(response_text)
+                
+        # Handle the case where the model returns an array instead of a single object
+        if isinstance(parsed_response, list) and len(parsed_response) > 0:
+            print("Warning: Gemini returned multiple cars. Using the first one.")
+            parsed_response = parsed_response[0]
         
         # Return the parsed details
         car = {
@@ -238,11 +318,22 @@ async def predict(image: UploadFile) -> Dict[str, Any]:
             "rarity": parsed_response.get("rarity"),
             "link": parsed_response.get("link")
         }
+        
         return {"success": True, "car": car}
+    except asyncio.TimeoutError:
+        print(f"Prediction timed out after {TIMEOUT_SECONDS} seconds")
+        return {"success": False, "error": f"Request timed out after {TIMEOUT_SECONDS} seconds. Please try again with a smaller image or try later."}
     except json.JSONDecodeError as e:
-        return {"success": False, "error": "Failed to parse response as JSON", "response_text": response.text}
+        print(f"JSON parse error: {str(e)}")
+        return {"success": False, "error": "Failed to parse response as JSON", "response_text": response.text if 'response' in locals() else "No response"}
     except Exception as e:
+        print(f"Prediction error: {str(e)}")
         return {"success": False, "error": str(e)}
+    finally:
+        # Make sure image is cleaned up even if there's an error
+        if pil_image is not None:
+            del pil_image
+            gc.collect()
 
 
 @app.post("/save-car/")
@@ -258,6 +349,10 @@ async def save_car(car_data: CarData) -> Dict[str, Any]:
     """
 
     try:
+        # Get connections from the pool
+        dynamodb = get_dynamodb()
+        cars_table = dynamodb.Table(DYNAMODB_TABLE_NAME)
+        
         # Check if S3 already contains the image
         is_s3_url = S3_BUCKET_NAME in car_data.imageUrl if car_data.imageUrl else False
         
@@ -316,6 +411,7 @@ async def save_car(car_data: CarData) -> Dict[str, Any]:
         # Re-raise HTTP exceptions
         raise
     except Exception as e:
+        print(f"Error saving car: {str(e)}")
         return {"success": False, "error": str(e)}
 
 
@@ -333,6 +429,11 @@ async def delete_car(user_id: str, saved_at: str) -> Dict[str, Any]:
     """
 
     try:
+        # Get connections from pool
+        dynamodb = get_dynamodb()
+        cars_table = dynamodb.Table(DYNAMODB_TABLE_NAME)
+        s3_client = get_s3_client()
+        
         # Delete the item from DynamoDB
         response = cars_table.delete_item(
             Key={
@@ -365,6 +466,7 @@ async def delete_car(user_id: str, saved_at: str) -> Dict[str, Any]:
         
         return {"success": True, "message": "Car deleted successfully"}
     except Exception as e:
+        print(f"Error deleting car: {str(e)}")
         return {"success": False, "error": str(e)}
 
 
@@ -374,20 +476,25 @@ async def get_user_cars(user_id: str) -> Dict[str, Any]:
     Retrieve the cars saved by a specific user.
     
     Args:
-        user_id (str): THe Cognito user id of the requester.
+        user_id (str): The Cognito user id of the requester.
         
     Returns:
         A JSON object containing a list of CarData for all of the user's saved cars with the key "cars" if "success" is True.
     """
 
     try:
-        # Query DynamoDB for user's saved cars (newest first)
+        # Get a connection from the pool
+        dynamodb = get_dynamodb()
+        cars_table = dynamodb.Table(DYNAMODB_TABLE_NAME)
+        
+        # Query DynamoDB for user's saved cars (newest first) - use ProjectionExpression to only fetch the needed fields
         response = cars_table.query(
-            KeyConditionExpression='userId = :uid',
-            ExpressionAttributeValues={
-                ':uid': user_id
-            },
-            ScanIndexForward=False
+            KeyConditionExpression=Key('userId').eq(user_id),
+            ScanIndexForward=False,  # Sort in descending order (newest first)
+            ProjectionExpression="userId, savedAt, make, model, #yr, link, imageUrl, likes, isPrivate, description",
+            ExpressionAttributeNames={
+                "#yr": "year"
+            }
         )
         
         # Format the response
@@ -415,6 +522,7 @@ async def get_user_cars(user_id: str) -> Dict[str, Any]:
         
         return {"success": True, "cars": cars}
     except Exception as e:
+        print(f"Error in get-user-cars: {str(e)}")
         return {"success": False, "error": str(e)}
 
 
@@ -431,24 +539,86 @@ async def get_all_cars() -> Dict[str, Any]:
     """
 
     try:
-        # Scan DynamoDB for all car entries
-        response = cars_table.scan()
+        # Get connections from the pool
+        dynamodb = get_dynamodb()
+        cars_table = dynamodb.Table(DYNAMODB_TABLE_NAME)
+        users_table = dynamodb.Table(DYNAMODB_USERS_TABLE_NAME)
+        
+        # Retrieve public cars
+        response = cars_table.scan(
+            FilterExpression=Attr('isPrivate').eq(False) | Attr('isPrivate').not_exists(),
+            ProjectionExpression="userId, savedAt, make, model, #yr, link, imageUrl, likes, likedBy, description, username, profilePicture",
+            ExpressionAttributeNames={
+                "#yr": "year"
+            }
+        )
+        
+        # Collect unique user IDs to batch query usernames and profile photos
+        user_ids = {item.get('userId') for item in response.get('Items', [])}
+        
+        # Fetch all usernames and profile photos with cache
+        usernames = {}
+        profile_photos = {}
+        
+        for user_id in user_ids:
+            # Check username cache first
+            if user_id in username_cache:
+                usernames[user_id] = username_cache[user_id]
+            else:
+                try:
+                    user_response = users_table.get_item(
+                        Key={'userId': user_id},
+                        ProjectionExpression="username, profilePhoto"
+                    )
+                    if 'Item' in user_response:
+                        # Get username
+                        username = user_response['Item'].get('username', 'Anonymous')
+                        usernames[user_id] = username
+                        username_cache[user_id] = username
+                        
+                        # Get profile photo
+                        photo_url = user_response['Item'].get('profilePhoto', '')
+                        profile_photos[user_id] = photo_url
+                        profile_photo_cache[user_id] = photo_url
+                    else:
+                        usernames[user_id] = 'Anonymous'
+                        profile_photos[user_id] = ''
+                except Exception:
+                    usernames[user_id] = 'Anonymous'
+                    profile_photos[user_id] = ''
+            
+            # Check profile photo cache if not already fetched
+            if user_id not in profile_photos:
+                if user_id in profile_photo_cache:
+                    profile_photos[user_id] = profile_photo_cache[user_id]
+                else:
+                    # This would only happen if we had username in cache but not profile photo
+                    try:
+                        user_response = users_table.get_item(
+                            Key={'userId': user_id},
+                            ProjectionExpression="profilePhoto"
+                        )
+                        if 'Item' in user_response:
+                            photo_url = user_response['Item'].get('profilePhoto', '')
+                            profile_photos[user_id] = photo_url
+                            profile_photo_cache[user_id] = photo_url
+                        else:
+                            profile_photos[user_id] = ''
+                            profile_photo_cache[user_id] = ''
+                    except Exception:
+                        profile_photos[user_id] = ''
         
         # Format the response
         cars = []
         for item in response.get('Items', []):
-            # Skip private cars
-            if item.get('isPrivate', False):
-                continue
+            user_id = item.get('userId')
             
-            # Get current username from users table
-            user_response = users_table.get_item(
-                Key={'userId': item.get('userId')}
-            )
-            current_username = user_response.get('Item', {}).get('username', item.get('username', 'Anonymous'))
+            # Get username from our pre-fetched data
+            current_username = usernames.get(user_id, item.get('username', 'Anonymous'))
+            current_profile_photo = profile_photos.get(user_id, item.get('profilePicture', ''))
                 
             car_data = {
-                'userId': item.get('userId'),
+                'userId': user_id,
                 'savedAt': item.get('savedAt'),
                 'carInfo': {
                     'make': item.get('make'),
@@ -460,7 +630,7 @@ async def get_all_cars() -> Dict[str, Any]:
                 'likes': item.get('likes', 0),
                 'likedBy': item.get('likedBy', []),
                 'username': current_username,
-                'profilePicture': item.get('profilePicture', '')
+                'profilePicture': current_profile_photo
             }
             
             # Add description if it exists
@@ -471,9 +641,10 @@ async def get_all_cars() -> Dict[str, Any]:
         
         # Sort by savedAt in descending order (newest first)
         cars.sort(key=lambda x: x['savedAt'], reverse=True)
-
+        
         return {"success": True, "cars": cars}
     except Exception as e:
+        print(f"Error in get-all-cars: {str(e)}")
         return {"success": False, "error": str(e)}
 
 
@@ -492,12 +663,17 @@ async def like_car(poster_id: str, saved_at: str, liker_id: str) -> Dict[str, An
     """
 
     try:
+        # Get connection from pool
+        dynamodb = get_dynamodb()
+        cars_table = dynamodb.Table(DYNAMODB_TABLE_NAME)
+        
         # First get the car details
         car_response = cars_table.get_item(
             Key={
                 'userId': poster_id,
                 'savedAt': saved_at
-            }
+            },
+            ProjectionExpression="likedBy, likes"
         )
         
         # Car does not exist
@@ -533,6 +709,7 @@ async def like_car(poster_id: str, saved_at: str, liker_id: str) -> Dict[str, An
         
         return {"success": True, "likes": updated_likes}
     except Exception as e:
+        print(f"Error liking car: {str(e)}")
         return {"success": False, "error": str(e)}
 
 
@@ -551,12 +728,17 @@ async def unlike_car(poster_id: str, saved_at: str, liker_id: str) -> Dict[str, 
     """
     
     try:
+        # Get connection from pool
+        dynamodb = get_dynamodb()
+        cars_table = dynamodb.Table(DYNAMODB_TABLE_NAME)
+        
         # First get the car details
         car_response = cars_table.get_item(
             Key={
                 'userId': poster_id,
                 'savedAt': saved_at
-            }
+            },
+            ProjectionExpression="likedBy, likes"
         )
         
         # Car does not exist
@@ -592,6 +774,7 @@ async def unlike_car(poster_id: str, saved_at: str, liker_id: str) -> Dict[str, 
         
         return {"success": True, "likes": updated_likes}
     except Exception as e:
+        print(f"Error unliking car: {str(e)}")
         return {"success": False, "error": str(e)}
 
 
@@ -608,6 +791,10 @@ async def create_user(user_data: UserInfo) -> Dict[str, Any]:
     """
 
     try:
+        # Get connection from pool
+        dynamodb = get_dynamodb()
+        users_table = dynamodb.Table(DYNAMODB_USERS_TABLE_NAME)
+        
         # Add the user to the users table
         users_table.put_item(
             Item={
@@ -615,8 +802,13 @@ async def create_user(user_data: UserInfo) -> Dict[str, Any]:
                 'username': user_data.username,
             }
         )
+        
+        # Update username cache
+        username_cache[user_data.user_id] = user_data.username
+        
         return {"success": True}
     except Exception as e:
+        print(f"Error creating user: {str(e)}")
         return {"success": False, "error": str(e)}
 
 
@@ -633,12 +825,14 @@ async def update_username(new_user_data: UpdateUsernameInfo) -> Dict[str, Any]:
     """
 
     try:
+        # Get connection from pool
+        dynamodb = get_dynamodb()
+        users_table = dynamodb.Table(DYNAMODB_USERS_TABLE_NAME)
+        
         # Check if username already exists
         response = users_table.scan(
-            FilterExpression="username = :username",
-            ExpressionAttributeValues={
-                ":username": new_user_data.new_username
-            }
+            FilterExpression=Attr("username").eq(new_user_data.new_username),
+            ProjectionExpression="userId"
         )
         
         # If username exists and belongs to a different user, reject the update
@@ -655,8 +849,12 @@ async def update_username(new_user_data: UpdateUsernameInfo) -> Dict[str, Any]:
                 ':username': new_user_data.new_username,
             }
         )
+        
+        # Update username in cache
+        username_cache[new_user_data.user_id] = new_user_data.new_username
         return {"success": True}
     except Exception as e:
+        print(f"Error updating username: {str(e)}")
         return {"success": False, "error": str(e)}
 
 
@@ -673,28 +871,41 @@ async def get_current_usernames(user_ids: list[str]) -> Dict[str, Any]:
     """
 
     try:
+        # Get connection from pool
+        dynamodb = get_dynamodb()
+        users_table = dynamodb.Table(DYNAMODB_USERS_TABLE_NAME)
+        
         # Get current username for each Cognito user id from users table
         usernames = {}
         for user_id in user_ids:
-            try:
-                response = users_table.get_item(
-                    Key={'userId': user_id}
-                )
-                # Get the username from the user item
-                if 'Item' in response:
-                    usernames[user_id] = response['Item'].get('username', None)
-                else:
-                    usernames[user_id] = None
-            except Exception as e:
-                usernames[user_id] = None
+            # Check cache first
+            if user_id in username_cache:
+                usernames[user_id] = username_cache[user_id]
+            else:
+                try:
+                    response = users_table.get_item(
+                        Key={'userId': user_id},
+                        ProjectionExpression="username"
+                    )
+                    
+                    if 'Item' in response:
+                        username = response['Item'].get('username', 'Anonymous')
+                        usernames[user_id] = username
+                        # Cache for future requests
+                        username_cache[user_id] = username
+                    else:
+                        usernames[user_id] = 'Anonymous'
+                except Exception:
+                    usernames[user_id] = 'Anonymous'
         
         return {"success": True, "usernames": usernames}
     except Exception as e:
+        print(f"Error getting usernames: {str(e)}")
         return {"success": False, "error": str(e)}
     
 
 @app.post("/upload-profile-photo/{user_id}")
-async def upload_profile_photo(user_id: str, file: UploadFile = File) -> Dict[str, Any]:
+async def upload_profile_photo(user_id: str, file: UploadFile = File(...)) -> Dict[str, Any]:
     """
     Upload a profile photo to S3 and update the user's data to reference the new photo.
     
@@ -707,26 +918,36 @@ async def upload_profile_photo(user_id: str, file: UploadFile = File) -> Dict[st
     """
 
     try:
+        # Get connections from pool
+        dynamodb = get_dynamodb()
+        users_table = dynamodb.Table(DYNAMODB_USERS_TABLE_NAME)
+        s3_client = get_s3_client()
+        
         # Retrieve the user's data from the users table
         user_response = users_table.get_item(
-            Key={'userId': user_id}
+            Key={'userId': user_id},
+            ProjectionExpression="profilePhoto"
         )
 
         # Check if user exists
         if 'Item' in user_response:
             # Delete the old profile photo from S3 if it exists
             old_url = user_response['Item'].get('profilePhoto', '')
-            if old_url:
-                old_key = old_url.split(f"{S3_BUCKET_NAME}.s3.{aws_region}.amazonaws.com/")[1]
-
-                s3_client.delete_object(
-                    Bucket=S3_BUCKET_NAME,
-                    Key=old_key
-                )
+            if old_url and S3_BUCKET_NAME in old_url:
+                try:
+                    old_key = old_url.split(f"{S3_BUCKET_NAME}.s3.{aws_region}.amazonaws.com/")[1]
+                    s3_client.delete_object(
+                        Bucket=S3_BUCKET_NAME,
+                        Key=old_key
+                    )
+                except Exception as s3_error:
+                    print(f"Warning: Could not delete old S3 profile photo: {str(s3_error)}")
+                    # Continue with the upload process even if deletion fails
 
             # Process and upload the new image to S3
             _, image_data = process_image(file)
-            s3_url = await upload_to_s3(image_data, user_id, generate_image_hash(image_data))
+            image_hash = generate_image_hash(image_data)
+            s3_url = await upload_to_s3(image_data, user_id, f"profile_{image_hash}")
 
             # Update the user's profile photo URL in the users table
             users_table.update_item(
@@ -736,11 +957,15 @@ async def upload_profile_photo(user_id: str, file: UploadFile = File) -> Dict[st
                     ':photo_url': s3_url
                 }
             )
+            
+            # Update cache
+            profile_photo_cache[user_id] = s3_url
 
             return {"success": True, "photo_url": s3_url}
         else:
             return {"success": False, "error": "User not found"}
     except Exception as e:
+        print(f"Error uploading profile photo: {str(e)}")
         return {"success": False, "error": str(e)}
 
 
@@ -757,23 +982,40 @@ async def get_profile_photos(user_ids: List[str]) -> Dict[str, Any]:
     """
 
     try:
+        # Get connection from pool
+        dynamodb = get_dynamodb()
+        users_table = dynamodb.Table(DYNAMODB_USERS_TABLE_NAME)
+        
         # Get current profile photo for each Cognito user id from users table
         photos = {}
-        for user_id in user_ids:
-            try:
-                response = users_table.get_item(
-                    Key={'userId': user_id}
-                )
-                # Get the profile photo from the user item
-                if 'Item' in response:
-                    photos[user_id] = response['Item'].get('profilePhoto', '')
-                else:
-                    photos[user_id] = ''
-            except Exception as e:
-                photos[user_id] = ''
         
+        for user_id in user_ids:
+            # Check cache first
+            if user_id in profile_photo_cache:
+                photos[user_id] = profile_photo_cache[user_id]
+            else:
+                try:
+                    response = users_table.get_item(
+                        Key={'userId': user_id},
+                        ProjectionExpression="profilePhoto"
+                    )
+                    
+                    # Get the profile photo from the user item
+                    if 'Item' in response:
+                        photo_url = response['Item'].get('profilePhoto', '')
+                        photos[user_id] = photo_url
+                        # Cache for future requests
+                        profile_photo_cache[user_id] = photo_url
+                    else:
+                        photos[user_id] = ''
+                        profile_photo_cache[user_id] = ''
+                except Exception as e:
+                    print(f"Warning: Could not get profile photo for user {user_id}: {str(e)}")
+                    photos[user_id] = ''
+            
         return {"success": True, "photos": photos}
     except Exception as e:
+        print(f"Error getting profile photos: {str(e)}")
         return {"success": False, "error": str(e)}
 
 
@@ -790,23 +1032,33 @@ async def remove_profile_photo(user_id: str) -> Dict[str, Any]:
     """
 
     try:
+        # Get connections from pool
+        dynamodb = get_dynamodb()
+        users_table = dynamodb.Table(DYNAMODB_USERS_TABLE_NAME)
+        s3_client = get_s3_client()
+        
         # Retrieve the user's data from the users table
         user_response = users_table.get_item(
-            Key={'userId': user_id}
+            Key={'userId': user_id},
+            ProjectionExpression="profilePhoto"
         )
 
         # Check if user exists
         if 'Item' in user_response:
             # Delete the profile photo from S3 if it exists
             old_url = user_response['Item'].get('profilePhoto', '')
-            if old_url:
-                old_key = old_url.split(f"{S3_BUCKET_NAME}.s3.{aws_region}.amazonaws.com/")[1]
+            if old_url and S3_BUCKET_NAME in old_url:
+                try:
+                    old_key = old_url.split(f"{S3_BUCKET_NAME}.s3.{aws_region}.amazonaws.com/")[1]
 
-                # Remove from S3
-                s3_client.delete_object(
-                    Bucket=S3_BUCKET_NAME,
-                    Key=old_key
-                )
+                    # Remove from S3
+                    s3_client.delete_object(
+                        Bucket=S3_BUCKET_NAME,
+                        Key=old_key
+                    )
+                except Exception as s3_error:
+                    print(f"Warning: Could not delete S3 profile photo: {str(s3_error)}")
+                    # Continue with the process even if S3 deletion fails
 
                 # Update the user's profile photo URL in the users table to empty string
                 users_table.update_item(
@@ -816,11 +1068,15 @@ async def remove_profile_photo(user_id: str) -> Dict[str, Any]:
                         ':photo_url': ''
                     }
                 )
+                
+                # Update cache
+                profile_photo_cache[user_id] = ''
 
             return {"success": True}
         else:
             return {"success": False, "error": "User not found"}
     except Exception as e:
+        print(f"Error removing profile photo: {str(e)}")
         return {"success": False, "error": str(e)}
 
 
@@ -872,13 +1128,24 @@ async def send_contact_email(contact_data: ContactForm) -> Dict[str, Any]:
         
         msg.attach(MIMEText(html, 'html'))
         
-        # Send email
-        with smtplib.SMTP(smtp_server, smtp_port) as server:
-            server.starttls()
-            server.login(email_user, email_password)
-            server.send_message(msg)
-        
-        return {"success": True, "message": "Email sent successfully"}
+        # Send email with timeout
+        try:
+            with smtplib.SMTP(smtp_server, smtp_port, timeout=10) as server:
+                server.starttls()
+                server.login(email_user, email_password)
+                server.send_message(msg)
+                
+            return {"success": True, "message": "Email sent successfully"}
+        except smtplib.SMTPException as smtp_error:
+            print(f"SMTP error: {str(smtp_error)}")
+            raise HTTPException(status_code=500, detail=f"Failed to send email: {str(smtp_error)}")
+        except TimeoutError:
+            print("SMTP timeout error")
+            raise HTTPException(status_code=504, detail="Email server timeout")
     
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
     except Exception as e:
+        print(f"Email error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to send email: {str(e)}")
